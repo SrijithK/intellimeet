@@ -19,9 +19,6 @@ class JobStore:
         Base.metadata.create_all(bind=self.engine)
 
     def create_job(self, file_name: str, content: bytes) -> dict[str, object]:
-        if len(content) == 0:
-            raise ValueError("Uploaded file is empty.")
-
         content_hash = hashlib.sha256(content).hexdigest()
 
         with self.session_factory() as session:

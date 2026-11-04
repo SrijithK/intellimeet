@@ -4,7 +4,8 @@ import asyncio
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
-from app.services.ingestion import MAX_UPLOAD_SIZE_BYTES, ingestion_service
+from app.services.ingestion import ingestion_service
+from app.validation import MAX_UPLOAD_SIZE_BYTES, validate_upload
 
 app = FastAPI(title="IntelliMeet API")
 
@@ -20,18 +21,15 @@ async def upload_meeting(file: UploadFile = File(...)) -> dict[str, object]:
         raise HTTPException(status_code=400, detail="A transcript file is required.")
 
     file_name = file.filename
-    extension = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
-    if extension not in {"txt", "vtt"}:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type: {extension or 'unknown'}")
-
     content = await file.read()
-    if len(content) == 0:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
-    if len(content) > MAX_UPLOAD_SIZE_BYTES:
-        raise HTTPException(
-            status_code=413,
-            detail=f"File is too large. Maximum allowed size is {MAX_UPLOAD_SIZE_BYTES} bytes.",
-        )
+    try:
+        validate_upload(file_name, content)
+    except ValueError as exc:
+        message = str(exc)
+        status_code = 413 if "too large" in message.lower() else 400
+        if "unsupported file type" in message.lower():
+            status_code = 400
+        raise HTTPException(status_code=status_code, detail=message) from exc
 
     try:
         job = ingestion_service.create_job(file_name, content)

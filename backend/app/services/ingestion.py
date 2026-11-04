@@ -5,8 +5,7 @@ from typing import Any, Optional
 from app.models import Meeting
 from app.parsers import parse_txt_transcript, parse_vtt_transcript
 from app.services.job_store import JobStore
-
-MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024
+from app.validation import MAX_UPLOAD_SIZE_BYTES
 
 
 class IngestionService:
@@ -14,10 +13,6 @@ class IngestionService:
         self.job_store = job_store or JobStore()
 
     def create_job(self, file_name: str, content: bytes) -> dict[str, Any]:
-        if len(content) == 0:
-            raise ValueError("Uploaded file is empty.")
-        if len(content) > MAX_UPLOAD_SIZE_BYTES:
-            raise ValueError(f"File is too large. Maximum allowed size is {MAX_UPLOAD_SIZE_BYTES} bytes.")
         return self.job_store.create_job(file_name, content)
 
     async def process_job(self, job_id: str, file_name: str, content: bytes) -> None:
