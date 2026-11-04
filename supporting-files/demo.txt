@@ -1,0 +1,3 @@
+[00:01:05] Alice: We decided to move the launch.
+[00:02:10] Bob: I will own the rollout checklist.
+[00:02:15] Alice: Great! 

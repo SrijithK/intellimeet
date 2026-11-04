@@ -1,0 +1,1 @@
+"""IntelliMeet backend package."""
