@@ -13,6 +13,15 @@ class TranscriptTurn:
 
 
 @dataclass
+class MeetingChunk:
+    speaker: str
+    text: str
+    start: int
+    end: int | None = None
+    embedding: list[float] | None = None
+
+
+@dataclass
 class Meeting:
     title: str
     source_name: str
