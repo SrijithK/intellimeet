@@ -28,7 +28,7 @@ class JobStore:
                         "job_id": existing.id,
                         "status": existing.status,
                         "file_name": existing.file_name,
-                        "meeting": existing.meeting,
+                        "result": existing.meeting,
                         "error": existing.error,
                     }
                 raise ValueError(f"A file named '{file_name}' already exists with different content.")
@@ -47,7 +47,7 @@ class JobStore:
                 "job_id": job.id,
                 "status": job.status,
                 "file_name": job.file_name,
-                "meeting": job.meeting,
+                "result": job.meeting,
                 "error": job.error,
             }
 
@@ -60,7 +60,7 @@ class JobStore:
                 "job_id": job.id,
                 "status": job.status,
                 "file_name": job.file_name,
-                "meeting": job.meeting,
+                "result": job.meeting,
                 "error": job.error,
             }
 

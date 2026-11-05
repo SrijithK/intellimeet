@@ -116,6 +116,29 @@ def _with_source_turn(session: Session, model, meeting_id: str, fields: Sequence
     ]
 
 
+def _summary(record: MeetingRecord, turn_count: int) -> dict[str, Any]:
+    return {
+        "id": record.id,
+        "title": record.title,
+        "source_name": record.source_name,
+        "source_type": record.source_type,
+        "created_at": record.created_at,
+        "extraction_status": record.extraction_status,
+        "turn_count": turn_count,
+    }
+
+
+def list_meetings(session: Session) -> list[dict[str, Any]]:
+    """All meetings, newest first, with their turn counts."""
+    turn_count = (
+        select(func.count()).select_from(TurnRecord).where(TurnRecord.meeting_id == MeetingRecord.id).scalar_subquery()
+    )
+    rows = session.execute(
+        select(MeetingRecord, turn_count).order_by(MeetingRecord.created_at.desc(), MeetingRecord.id)
+    ).all()
+    return [_summary(record, count) for record, count in rows]
+
+
 def get_meeting(session: Session, meeting_id: str) -> Optional[dict[str, Any]]:
     record = session.get(MeetingRecord, meeting_id)
     if record is None:
@@ -130,14 +153,9 @@ def get_meeting(session: Session, meeting_id: str) -> Optional[dict[str, Any]]:
         {"idx": t.idx, "speaker": t.speaker, "text": t.text, "start": t.start_ts, "end": t.end_ts} for t in turns
     ]
     return {
-        "id": record.id,
-        "title": record.title,
-        "source_name": record.source_name,
-        "source_type": record.source_type,
+        **_summary(record, len(turn_list)),
         "media_uri": record.media_uri,
-        "created_at": record.created_at.isoformat() if record.created_at else None,
         "chunk_count": chunk_count,
-        "extraction_status": record.extraction_status,
         "extraction_error": record.extraction_error,
         "decisions": _with_source_turn(session, DecisionRecord, meeting_id, ["text"]),
         "action_items": _with_source_turn(session, ActionItemRecord, meeting_id, ["owner", "task", "due"]),

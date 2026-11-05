@@ -30,6 +30,7 @@ docker-compose.yml          postgres (pgvector) on host port 5433
 seed/                       sample transcripts (used by retrieval tests; later startup seed + golden set)
 backend/
   app/main.py               FastAPI routes
+  app/schemas.py            API request/response models (the contract)
   app/models.py             canonical dataclasses: Meeting, TranscriptTurn, TranscriptChunk
   app/db_models.py          SQLAlchemy tables (schema owned by Alembic)
   app/parsers/              TranscriptSource registry + txt/vtt parsers
@@ -45,7 +46,9 @@ From `backend/` (with `docker compose up -d postgres` running):
   Live LLM test: `RUN_LLM_TESTS=1 .venv/bin/python -m pytest -q` (needs Ollama with `llama3.1`)
 - Lint/format: `.venv/bin/ruff check . && .venv/bin/ruff format --check .`
 - Migrate dev DB: `.venv/bin/alembic upgrade head`; check models vs schema: `.venv/bin/alembic check`
-- Run API: `.venv/bin/uvicorn app.main:app --reload`
+- Run API: `.venv/bin/uvicorn app.main:app --reload` (Swagger UI at `/docs`)
+- API contract: `docs/openapi.json`, generated from `app/schemas.py` + routes. After any API change run
+  `.venv/bin/python -m scripts.export_openapi` and commit; `tests/test_contract.py` fails if it drifts.
 
 ## Stack
 

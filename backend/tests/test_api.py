@@ -65,7 +65,7 @@ def test_upload_txt_meeting_creates_and_completes_job(client):
         time.sleep(0.05)
 
     assert last_status == "completed"
-    result = client.get(f"/api/jobs/{job_id}").json()["meeting"]
+    result = client.get(f"/api/jobs/{job_id}").json()["result"]
     meeting_response = client.get(f"/api/meetings/{result['meeting_id']}")
     assert meeting_response.status_code == 200
     meeting = meeting_response.json()
@@ -125,7 +125,7 @@ def test_search_returns_fused_results_with_filters(client):
     response = client.get("/api/search", params={"q": "marketing budget", "k": 5})
     assert response.status_code == 200
     top = response.json()["results"][0]
-    assert top["meeting_id"] == job["meeting"]["meeting_id"]
+    assert top["meeting_id"] == job["result"]["meeting_id"]
     assert top["text_rank"] == 1
     assert {"meeting_title", "speakers", "start", "end", "score", "similarity"} <= top.keys()
 
