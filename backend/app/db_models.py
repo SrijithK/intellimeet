@@ -3,6 +3,7 @@ from __future__ import annotations
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     JSON,
+    Boolean,
     Column,
     Computed,
     DateTime,
@@ -121,3 +122,24 @@ class TopicRecord(Base):
     meeting_id = Column(String, nullable=False, index=True)
     turn_idx = Column(Integer, nullable=False)
     label = Column(String, nullable=False)
+
+
+class QueryRecord(Base):
+    """One row per chat request: what was asked, what was retrieved, what came back, and the cost."""
+
+    __tablename__ = "queries"
+    __table_args__ = (Index("ix_queries_created_at", "created_at"),)
+
+    id = Column(String, primary_key=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    question = Column(Text, nullable=False)
+    filters = Column(JSON, nullable=False)
+    retrieved_chunk_ids = Column(JSON, nullable=False)
+    cited = Column(JSON, nullable=False)  # [{meeting_id, turn_idx, speaker, start}]
+    answer = Column(Text, nullable=True)
+    found = Column(Boolean, nullable=True)
+    model = Column(String, nullable=True)
+    prompt_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    latency_ms = Column(Integer, nullable=True)
+    error = Column(Text, nullable=True)

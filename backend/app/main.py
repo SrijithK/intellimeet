@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict
 from datetime import datetime
 from typing import Optional
+from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -16,6 +17,7 @@ from app.services import meeting_store
 from app.services.answering import Answerer
 from app.services.ingestion import ingestion_service
 from app.services.job_queue import InProcessJobQueue
+from app.services.query_log import record_query
 from app.services.retrieval import Retriever, SearchFilters
 from app.validation import validate_upload
 
@@ -101,6 +103,11 @@ class ChatRequest(BaseModel):
     date_to: Optional[datetime] = None
 
 
+def _model_name() -> Optional[str]:
+    llm = answerer._llm
+    return getattr(llm, "model", None) or getattr(llm, "name", None)
+
+
 def _sse(event: str, data: dict[str, object]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
@@ -115,13 +122,20 @@ def chat(request: ChatRequest) -> StreamingResponse:
         date_to=request.date_to,
     )
 
+    question = request.question.strip()
+    query_id = str(uuid4())
+
     def events() -> Iterator[str]:
         try:
-            for event in answerer.answer(request.question.strip(), filters):
+            for event in answerer.answer(question, filters):
+                if event.type == "done":
+                    event.data["query_id"] = query_id
+                    record_query(answerer.session_factory, query_id, question, filters, _model_name(), done=event.data)
                 yield _sse(event.type, event.data)
         except Exception as exc:  # the stream has started, so report errors in-band
-            logger.exception("Chat failed for question %r", request.question)
-            yield _sse("error", {"message": str(exc)})
+            logger.exception("Chat failed for query %s", query_id)
+            record_query(answerer.session_factory, query_id, question, filters, _model_name(), error=str(exc))
+            yield _sse("error", {"message": str(exc), "query_id": query_id})
 
     # A sync generator: Starlette iterates it in a threadpool, so blocking LLM/DB calls are fine.
     return StreamingResponse(

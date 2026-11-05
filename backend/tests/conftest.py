@@ -50,7 +50,10 @@ def clean_tables(migrated_database) -> None:
     engine = create_engine(TEST_DATABASE_URL)
     with engine.begin() as conn:
         conn.execute(
-            text("TRUNCATE jobs, meetings, turns, chunks, decisions, action_items, topics RESTART IDENTITY CASCADE")
+            text(
+                "TRUNCATE jobs, meetings, turns, chunks, decisions, action_items, topics, queries "
+                "RESTART IDENTITY CASCADE"
+            )
         )
     engine.dispose()
 

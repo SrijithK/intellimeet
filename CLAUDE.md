@@ -13,7 +13,9 @@ changes to the stack or architecture.
 - Done: Stories 1.1-1.3, 2.1 (ingestion: parse -> chunk -> embed -> persist), 2.2 (hybrid retrieval,
   `GET /api/search`).
   2.3 (structured extraction via local Ollama; decisions/action items/topics linked to source turns).
-- Next: Story 3.1 (chat API). Not built yet: chat, frontend, Docker images for api/frontend,
+  3.1/3.2 (`POST /api/chat`: SSE stream, grounded answers citing `[meeting, hh:mm:ss, speaker]`,
+  every request logged to the `queries` table).
+- Next: Epic 4 (frontend). Not built yet: frontend, Docker images for api/frontend,
   seed auto-ingest on startup (sample transcripts already in `seed/`), Anthropic LLM provider.
 - LLM: the user has no Anthropic API key, so the active provider is Ollama (`llama3.1`) on the host.
   Anthropic stays the intended provider behind `LLMProvider` once a key exists (see D3).
@@ -32,7 +34,8 @@ backend/
   app/db_models.py          SQLAlchemy tables (schema owned by Alembic)
   app/parsers/              TranscriptSource registry + txt/vtt parsers
   app/llm/                  LLMProvider interface + Ollama provider (schema-constrained JSON)
-  app/services/             ingestion, chunking, embedder, extraction, job_store, job_queue, meeting_store, retrieval
+  app/services/             ingestion, chunking, embedder, extraction, retrieval, answering, query_log,
+                            job_store, job_queue, meeting_store
   migrations/               Alembic; hand-written migrations
   tests/                    pytest against real Postgres (intellimeet_test DB, auto-created)
 ```

@@ -173,8 +173,42 @@ def test_chat_reports_llm_failure_as_error_event(client, fake_chat_llm):
 
     events = _sse_events(client.post("/api/chat", json={"question": "marketing budget?"}).text)
 
-    assert events[-1] == ("error", {"message": "Could not reach Ollama"})
+    name, data = events[-1]
+    assert (name, data["message"]) == ("error", "Could not reach Ollama")
 
 
 def test_chat_validates_question(client):
     assert client.post("/api/chat", json={"question": ""}).status_code == 422
+
+
+def test_chat_requests_are_logged(client, fake_chat_llm):
+    from app.db_models import QueryRecord
+    from app.services.ingestion import ingestion_service as service
+
+    _upload_and_wait(client, "budget.txt", "[00:00:05] Alice: The marketing budget is approved.\n")
+    fake_chat_llm(FakeLLM(stream=["Approved [1]."]))
+    body = {"question": "marketing budget?", "date_from": "2020-01-01T00:00:00Z"}
+
+    done = _sse_events(client.post("/api/chat", json=body).text)[-1][1]
+
+    with service.session_factory() as session:
+        row = session.get(QueryRecord, done["query_id"])
+    assert row.question == "marketing budget?"
+    assert row.filters == {"date_from": "2020-01-01T00:00:00+00:00"}
+    assert row.found is True and row.error is None
+    assert row.retrieved_chunk_ids and row.cited[0]["speaker"] == "Alice"
+    assert (row.prompt_tokens, row.output_tokens) == (100, 1)
+    assert row.latency_ms is not None
+
+
+def test_failed_chat_is_logged_with_error(client, fake_chat_llm):
+    from app.db_models import QueryRecord
+    from app.services.ingestion import ingestion_service as service
+
+    _upload_and_wait(client, "budget.txt", "[00:00:05] Alice: The marketing budget is approved.\n")
+    fake_chat_llm(FakeLLM(error=LLMError("boom")))
+
+    error = _sse_events(client.post("/api/chat", json={"question": "marketing budget?"}).text)[-1][1]
+
+    with service.session_factory() as session:
+        assert session.get(QueryRecord, error["query_id"]).error == "boom"
