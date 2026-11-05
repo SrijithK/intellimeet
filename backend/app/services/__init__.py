@@ -1,5 +1,5 @@
 from .chunking import chunk_meeting
-from .embedder import LocalEmbedder
+from .embedder import Embedder, FastEmbedEmbedder, get_embedder
 from .ingestion import IngestionService
 
-__all__ = ["IngestionService", "LocalEmbedder", "chunk_meeting"]
+__all__ = ["Embedder", "FastEmbedEmbedder", "IngestionService", "chunk_meeting", "get_embedder"]
