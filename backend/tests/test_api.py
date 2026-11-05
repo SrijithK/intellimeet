@@ -3,7 +3,7 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import app, retriever
 from app.services.ingestion import ingestion_service
 from app.validation import MAX_UPLOAD_SIZE_BYTES
 from tests.fakes import FakeEmbedder
@@ -18,10 +18,21 @@ def client():
 
 @pytest.fixture(autouse=True)
 def fake_embedder():
-    original = ingestion_service._embedder
-    ingestion_service.embedder = FakeEmbedder()
+    # Ingestion and search must share an embedder, or query and chunk vectors won't be comparable.
+    originals = ingestion_service._embedder, retriever._embedder
+    ingestion_service.embedder = retriever.embedder = FakeEmbedder()
     yield
-    ingestion_service._embedder = original
+    ingestion_service._embedder, retriever._embedder = originals
+
+
+def _upload_and_wait(client, name, content):
+    job_id = client.post("/api/meetings", files={"file": (name, content, "text/plain")}).json()["job_id"]
+    for _ in range(50):
+        job = client.get(f"/api/jobs/{job_id}").json()
+        if job["status"] in ("completed", "failed"):
+            return job
+        time.sleep(0.05)
+    raise AssertionError("job did not finish")
 
 
 def test_upload_txt_meeting_creates_and_completes_job(client):
@@ -103,3 +114,23 @@ def test_rejects_duplicate_file_name_with_different_content(client):
 
 def test_unknown_meeting_returns_404(client):
     assert client.get("/api/meetings/does-not-exist").status_code == 404
+
+
+def test_search_returns_fused_results_with_filters(client):
+    job = _upload_and_wait(client, "budget.txt", "[00:00:01] Alice: The marketing budget is approved.\n")
+    _upload_and_wait(client, "hiring.txt", "[00:00:01] Bob: We are hiring two engineers.\n")
+
+    response = client.get("/api/search", params={"q": "marketing budget", "k": 5})
+    assert response.status_code == 200
+    top = response.json()["results"][0]
+    assert top["meeting_id"] == job["meeting"]["meeting_id"]
+    assert top["text_rank"] == 1
+    assert {"meeting_title", "speakers", "start", "end", "score", "similarity"} <= top.keys()
+
+    filtered = client.get("/api/search", params={"q": "marketing budget", "speaker": "bob"}).json()["results"]
+    assert [r["speakers"] for r in filtered] == [["Bob"]]
+
+
+def test_search_validates_query(client):
+    assert client.get("/api/search", params={"q": ""}).status_code == 422
+    assert client.get("/api/search", params={"q": "x", "k": 0}).status_code == 422

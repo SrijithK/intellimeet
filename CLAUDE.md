@@ -10,8 +10,10 @@ changes to the stack or architecture.
 ## Status
 
 - Stack and architecture: finalised. Delivery plan: [docs/stories.md](docs/stories.md).
-- Done: Stories 1.1-1.3, 2.1 (ingestion: parse -> chunk -> embed -> persist in Postgres).
-- Next: Story 2.2 (hybrid retrieval). Not built yet: extraction, chat, frontend, Docker images for api/frontend.
+- Done: Stories 1.1-1.3, 2.1 (ingestion: parse -> chunk -> embed -> persist), 2.2 (hybrid retrieval,
+  `GET /api/search`).
+- Next: Story 2.3 (structured extraction). Not built yet: chat, frontend, Docker images for api/frontend,
+  seed auto-ingest on startup (sample transcripts already in `seed/`).
 - Local venv is Python 3.9 (only Python on the machine); keep code 3.9-compatible
   (`Optional[...]`, not `X | None`, in runtime-evaluated annotations). Containers will use 3.12.
 
@@ -19,12 +21,13 @@ changes to the stack or architecture.
 
 ```
 docker-compose.yml          postgres (pgvector) on host port 5433
+seed/                       sample transcripts (used by retrieval tests; later startup seed + golden set)
 backend/
   app/main.py               FastAPI routes
   app/models.py             canonical dataclasses: Meeting, TranscriptTurn, TranscriptChunk
   app/db_models.py          SQLAlchemy tables (schema owned by Alembic)
   app/parsers/              TranscriptSource registry + txt/vtt parsers
-  app/services/             ingestion, chunking, embedder, job_store, job_queue, meeting_store
+  app/services/             ingestion, chunking, embedder, job_store, job_queue, meeting_store, retrieval
   migrations/               Alembic; hand-written migrations
   tests/                    pytest against real Postgres (intellimeet_test DB, auto-created)
 ```

@@ -1,0 +1,14 @@
+[00:00:03] Sofia: I pulled together the support tickets and churn survey results from September.
+[00:00:12] Priya: Great. What are the top reasons people are leaving?
+[00:00:18] Sofia: Number one, by far, is missing CSV export. Accountants need to get transactions into their own spreadsheets and we just don't support it.
+[00:00:34] Dana: How many tickets mention it?
+[00:00:39] Sofia: Forty-two tickets last month, and eleven of the twenty-eight churned accounts named it as the main reason.
+[00:00:55] Priya: That's hard to ignore. I think CSV export has to be the top priority for Q1.
+[00:01:08] Dana: Marketing would love that. It's an easy story to tell.
+[00:01:15] Priya: Okay, decision: CSV export is the number one roadmap item for Q1. I'll write the spec and share it by the end of next week.
+[00:02:20] Sofia: Second theme is onboarding. People don't understand the bank connection step and they open chat to ask about it.
+[00:02:35] Priya: Leo is already redesigning that screen, so that should help.
+[00:02:41] Sofia: Good. Third, a few complaints about the mobile app being slow to load the dashboard, but much smaller volume.
+[00:02:55] Dana: Should we reply to the customers who asked for export?
+[00:03:01] Priya: Yes. Sofia, can you send a note to the people who requested CSV export telling them it's coming in Q1?
+[00:03:10] Sofia: Sure, I'll send that out by Friday.

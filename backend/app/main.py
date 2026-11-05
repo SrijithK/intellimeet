@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from dataclasses import asdict
+from datetime import datetime
+from typing import Optional
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 
 from app.services import meeting_store
 from app.services.ingestion import ingestion_service
 from app.services.job_queue import InProcessJobQueue
+from app.services.retrieval import Retriever, SearchFilters
 from app.validation import validate_upload
 
 job_queue = InProcessJobQueue(ingestion_service.process_job)
+retriever = Retriever(ingestion_service.session_factory)
 
 
 @asynccontextmanager
@@ -63,6 +68,21 @@ async def get_meeting(meeting_id: str) -> dict[str, object]:
     if meeting is None:
         raise HTTPException(status_code=404, detail=f"Meeting {meeting_id} not found")
     return meeting
+
+
+@app.get("/api/search")
+def search(
+    q: str = Query(..., min_length=1, description="Natural-language query"),
+    meeting_id: Optional[list[str]] = Query(None, description="Restrict to these meetings (repeatable)"),
+    speaker: Optional[str] = Query(None, description="Only chunks in which this speaker talks"),
+    date_from: Optional[datetime] = Query(None),
+    date_to: Optional[datetime] = Query(None),
+    k: int = Query(8, ge=1, le=50),
+) -> dict[str, object]:
+    # Sync endpoint: embedding and DB calls block, so FastAPI runs this in its threadpool.
+    filters = SearchFilters(meeting_ids=meeting_id, speaker=speaker, date_from=date_from, date_to=date_to)
+    results = retriever.retrieve(q, filters, k=k)
+    return {"query": q, "results": [asdict(chunk) for chunk in results]}
 
 
 @app.get("/api/jobs/{job_id}")

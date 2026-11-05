@@ -1,0 +1,22 @@
+[00:00:04] Priya: Okay, let's get started. Main agenda today is the launch date for Ledger 2.0, then pricing, then design status.
+[00:00:15] Marcus: Before we talk dates, I need to flag that the payments integration is behind. The Stripe webhook handling is still dropping events under load.
+[00:00:31] Priya: How far behind are we talking?
+[00:00:38] Marcus: Realistically two weeks. We need retries with backoff and an idempotency check before I'd be comfortable shipping it.
+[00:00:55] Dana: Two weeks hurts. The press release is drafted around November 3rd and we already briefed two journalists.
+[00:01:12] Priya: I'd rather move the date than launch with broken billing. Customers losing payments would be far worse than a delayed announcement.
+[00:01:30] Leo: Agreed. A slip also gives us time to finish the new onboarding screens properly.
+[00:01:44] Priya: Then we're decided: the launch moves from November 3rd to November 17th. Dana, can you update the press release and let the journalists know?
+[00:02:01] Dana: Yes, I'll update the press release and email both journalists by Wednesday.
+[00:02:12] Marcus: I'll own the webhook retry fix and have it in staging by Friday.
+[00:03:05] Priya: Next topic, pricing. Dana, where did we land on the tiers?
+[00:03:14] Dana: Three tiers. Starter at 12 dollars per seat, Team at 25, and Enterprise is custom. Beta users said 30 for Team felt steep.
+[00:03:33] Marcus: Do we grandfather the beta customers?
+[00:03:40] Priya: Yes. Beta customers keep the Team tier at 20 dollars for the first year. Let's lock that in.
+[00:03:52] Dana: I'll put the final pricing page copy in the shared doc by Monday.
+[00:05:10] Priya: Last item, design. Leo, how are the onboarding screens coming along?
+[00:05:18] Leo: The first three screens are done. The bank connection step still confuses people in usability tests, about half of testers got stuck there.
+[00:05:36] Marcus: Is that a design problem or is the bank API slow?
+[00:05:42] Leo: Mostly design. We ask for too much at once. I want to split it into two steps and add a progress indicator.
+[00:05:58] Priya: Sounds good. Leo, please have the revised onboarding flow ready for the design review next Tuesday.
+[00:06:10] Leo: Will do.
+[00:06:15] Priya: Great, thanks everyone. Recap: launch on November 17th, webhook fix by Friday, pricing copy by Monday, onboarding redesign by Tuesday.
