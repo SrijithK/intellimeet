@@ -9,7 +9,7 @@ from app.services.embedder import FastEmbedEmbedder
 from app.services.ingestion import IngestionService
 from app.services.retrieval import Retriever, SearchFilters, reciprocal_rank_fusion
 
-SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
+SEED_DIR = Path(__file__).resolve().parents[2] / "data" / "transcripts"
 
 
 @pytest.fixture(scope="module")

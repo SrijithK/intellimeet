@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -14,15 +15,20 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import StreamingResponse
 
 from app import schemas
+from app.config import settings
 from app.services import meeting_store
 from app.services.answering import Answerer
 from app.services.ingestion import ingestion_service
 from app.services.job_queue import InProcessJobQueue
 from app.services.query_log import record_query
 from app.services.retrieval import Retriever, SearchFilters
+from app.services.seeding import seed_transcripts
 from app.validation import MAX_UPLOAD_SIZE_BYTES, validate_upload
 
 API_VERSION = "0.1.0"
+
+# Our app.* loggers (ingestion, extraction, seeding) are otherwise silent: uvicorn only configures its own.
+logging.basicConfig(level=settings.log_level, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 job_queue = InProcessJobQueue(ingestion_service.process_job)
 retriever = Retriever(ingestion_service.session_factory)
@@ -32,6 +38,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    if settings.seed_dir:
+        await seed_transcripts(Path(settings.seed_dir), ingestion_service, job_queue)
     yield
     await job_queue.drain()
 

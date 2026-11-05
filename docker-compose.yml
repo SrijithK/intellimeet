@@ -16,5 +16,33 @@ services:
       timeout: 3s
       retries: 20
 
+  api:
+    build: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://intellimeet:intellimeet@postgres:5432/intellimeet
+      # Ollama runs on the host (it needs the Mac's GPU); containers reach it via host.docker.internal.
+      LLM_PROVIDER: ollama
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      SEED_DIR: /data/transcripts
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Linux; Docker Desktop provides it already
+    volumes:
+      - ./data/transcripts:/data/transcripts:ro
+    ports:
+      # Direct API access (Swagger UI at /docs). The UI goes through the frontend's proxy instead.
+      - "${API_PORT:-8001}:8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
 volumes:
   pgdata:
