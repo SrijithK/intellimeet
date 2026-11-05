@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import json
+import logging
+from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 from datetime import datetime
 from typing import Optional
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 
 from app.services import meeting_store
+from app.services.answering import Answerer
 from app.services.ingestion import ingestion_service
 from app.services.job_queue import InProcessJobQueue
 from app.services.retrieval import Retriever, SearchFilters
@@ -15,6 +21,8 @@ from app.validation import validate_upload
 
 job_queue = InProcessJobQueue(ingestion_service.process_job)
 retriever = Retriever(ingestion_service.session_factory)
+answerer = Answerer(ingestion_service.session_factory, retriever)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -83,6 +91,44 @@ def search(
     filters = SearchFilters(meeting_ids=meeting_id, speaker=speaker, date_from=date_from, date_to=date_to)
     results = retriever.retrieve(q, filters, k=k)
     return {"query": q, "results": [asdict(chunk) for chunk in results]}
+
+
+class ChatRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=2000)
+    meeting_ids: Optional[list[str]] = None
+    speaker: Optional[str] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+
+
+def _sse(event: str, data: dict[str, object]) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
+
+
+@app.post("/api/chat")
+def chat(request: ChatRequest) -> StreamingResponse:
+    """Grounded answer as Server-Sent Events: `citations`, then `token`s, then `done` (or `error`)."""
+    filters = SearchFilters(
+        meeting_ids=request.meeting_ids,
+        speaker=request.speaker,
+        date_from=request.date_from,
+        date_to=request.date_to,
+    )
+
+    def events() -> Iterator[str]:
+        try:
+            for event in answerer.answer(request.question.strip(), filters):
+                yield _sse(event.type, event.data)
+        except Exception as exc:  # the stream has started, so report errors in-band
+            logger.exception("Chat failed for question %r", request.question)
+            yield _sse("error", {"message": str(exc)})
+
+    # A sync generator: Starlette iterates it in a threadpool, so blocking LLM/DB calls are fine.
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/api/jobs/{job_id}")

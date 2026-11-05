@@ -1,12 +1,14 @@
+import json
 import time
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, retriever
+from app.llm import LLMError
+from app.main import answerer, app, retriever
 from app.services.ingestion import ingestion_service
 from app.validation import MAX_UPLOAD_SIZE_BYTES
-from tests.fakes import FakeEmbedder
+from tests.fakes import FakeEmbedder, FakeLLM
 
 
 @pytest.fixture(scope="module")
@@ -134,3 +136,45 @@ def test_search_returns_fused_results_with_filters(client):
 def test_search_validates_query(client):
     assert client.get("/api/search", params={"q": ""}).status_code == 422
     assert client.get("/api/search", params={"q": "x", "k": 0}).status_code == 422
+
+
+def _sse_events(body):
+    events = []
+    for block in body.strip().split("\n\n"):
+        lines = dict(line.split(": ", 1) for line in block.splitlines())
+        events.append((lines["event"], json.loads(lines["data"])))
+    return events
+
+
+@pytest.fixture
+def fake_chat_llm():
+    original = answerer._llm
+    yield lambda llm: setattr(answerer, "llm", llm)
+    answerer._llm = original
+
+
+def test_chat_streams_sse_events(client, fake_chat_llm):
+    _upload_and_wait(client, "budget.txt", "[00:00:05] Alice: The marketing budget is approved.\n")
+    fake_chat_llm(FakeLLM(stream=["Approved ", "[1]", "."]))
+
+    response = client.post("/api/chat", json={"question": "Was the marketing budget approved?"})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    events = _sse_events(response.text)
+    assert [name for name, _ in events] == ["citations", "token", "token", "token", "done"]
+    assert "".join(data["text"] for name, data in events if name == "token") == "Approved [budget, 00:00:05, Alice]."
+    assert events[-1][1]["found"] is True
+
+
+def test_chat_reports_llm_failure_as_error_event(client, fake_chat_llm):
+    _upload_and_wait(client, "budget.txt", "[00:00:05] Alice: The marketing budget is approved.\n")
+    fake_chat_llm(FakeLLM(error=LLMError("Could not reach Ollama")))
+
+    events = _sse_events(client.post("/api/chat", json={"question": "marketing budget?"}).text)
+
+    assert events[-1] == ("error", {"message": "Could not reach Ollama"})
+
+
+def test_chat_validates_question(client):
+    assert client.post("/api/chat", json={"question": ""}).status_code == 422

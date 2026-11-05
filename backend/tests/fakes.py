@@ -23,13 +23,14 @@ class FakeEmbedder:
 
 
 class FakeLLM:
-    """Returns a canned JSON response (or raises) and records the prompts it was given."""
+    """Canned LLM: JSON replies for extraction, streamed text for chat. Records every prompt."""
 
     name = "fake"
 
-    def __init__(self, response=None, error=None):
+    def __init__(self, response=None, error=None, stream=None):
         self.response = response if response is not None else {"decisions": [], "action_items": [], "topics": []}
         self.error = error
+        self.stream = stream if stream is not None else ["ok"]
         self.calls = []
 
     def complete_json(self, system, user, schema):
@@ -37,3 +38,13 @@ class FakeLLM:
         if self.error is not None:
             raise self.error
         return self.response(user) if callable(self.response) else self.response
+
+    def stream_chat(self, system, user):
+        from app.llm import StreamChunk
+
+        self.calls.append(user)
+        if self.error is not None:
+            raise self.error
+        for piece in self.stream:
+            yield StreamChunk(text=piece)
+        yield StreamChunk(done=True, prompt_tokens=100, output_tokens=len(self.stream))
