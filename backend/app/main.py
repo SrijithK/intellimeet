@@ -1,13 +1,24 @@
 from __future__ import annotations
 
-import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
+from app.services import meeting_store
 from app.services.ingestion import ingestion_service
+from app.services.job_queue import InProcessJobQueue
 from app.validation import MAX_UPLOAD_SIZE_BYTES, validate_upload
 
-app = FastAPI(title="IntelliMeet API")
+job_queue = InProcessJobQueue(ingestion_service.process_job)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    yield
+    await job_queue.drain()
+
+
+app = FastAPI(title="IntelliMeet API", lifespan=lifespan)
 
 
 @app.get("/health")
@@ -39,9 +50,19 @@ async def upload_meeting(file: UploadFile = File(...)) -> dict[str, object]:
             raise HTTPException(status_code=409, detail=message) from exc
         raise HTTPException(status_code=400, detail=message) from exc
 
-    asyncio.create_task(ingestion_service.process_job(job["job_id"], file_name, content))
+    if job["status"] == "queued":  # an identical re-upload returns the existing job as-is
+        await job_queue.submit(job["job_id"], file_name, content)
 
     return {"job_id": job["job_id"], "status": job["status"]}
+
+
+@app.get("/api/meetings/{meeting_id}")
+async def get_meeting(meeting_id: str) -> dict[str, object]:
+    with ingestion_service.session_factory() as session:
+        meeting = meeting_store.get_meeting(session, meeting_id)
+    if meeting is None:
+        raise HTTPException(status_code=404, detail=f"Meeting {meeting_id} not found")
+    return meeting
 
 
 @app.get("/api/jobs/{job_id}")

@@ -35,3 +35,15 @@ Bob: We'll keep the action item open.
     assert meeting.turns[0].speaker == "Alice"
     assert meeting.turns[1].speaker == "Bob"
     assert meeting.turns[1].text == "We'll keep the action item open."
+
+
+def test_registry_picks_parser_by_extension_and_sets_source_type():
+    import pytest
+
+    from app.parsers import parse_transcript, supported_extensions
+
+    assert {"txt", "vtt"} <= supported_extensions()
+    meeting = parse_transcript("Demo.VTT", "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nAlice: Hi\n")
+    assert meeting.source_type == "vtt"
+    with pytest.raises(ValueError, match="Unsupported file type: md"):
+        parse_transcript("notes.md", "# hi")

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from app.parsers import file_extension, supported_extensions
+
 MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024
-ALLOWED_UPLOAD_EXTENSIONS = {"txt", "vtt"}
 
 
 def validate_upload(file_name: str, content: bytes) -> None:
@@ -12,6 +13,6 @@ def validate_upload(file_name: str, content: bytes) -> None:
     if len(content) > MAX_UPLOAD_SIZE_BYTES:
         raise ValueError(f"File is too large. Maximum allowed size is {MAX_UPLOAD_SIZE_BYTES} bytes.")
 
-    extension = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
-    if extension not in ALLOWED_UPLOAD_EXTENSIONS:
+    extension = file_extension(file_name)
+    if extension not in supported_extensions():
         raise ValueError(f"Unsupported file type: {extension or 'unknown'}")

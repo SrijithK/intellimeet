@@ -1,15 +1,31 @@
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services.ingestion import MAX_UPLOAD_SIZE_BYTES
+from app.services.ingestion import ingestion_service
+from app.validation import MAX_UPLOAD_SIZE_BYTES
+from tests.fakes import FakeEmbedder
 
 
-client = TestClient(app)
+
+@pytest.fixture(scope="module")
+def client():
+    # Context manager keeps one event loop alive so background jobs can finish.
+    with TestClient(app) as test_client:
+        yield test_client
 
 
-def test_upload_txt_meeting_creates_and_completes_job():
+@pytest.fixture(autouse=True)
+def fake_embedder():
+    original = ingestion_service._embedder
+    ingestion_service.embedder = FakeEmbedder()
+    yield
+    ingestion_service._embedder = original
+
+
+def test_upload_txt_meeting_creates_and_completes_job(client):
     response = client.post(
         "/api/meetings",
         files={
@@ -37,14 +53,19 @@ def test_upload_txt_meeting_creates_and_completes_job():
         time.sleep(0.05)
 
     assert last_status == "completed"
-    meeting = client.get(f"/api/jobs/{job_id}").json()["meeting"]
+    result = client.get(f"/api/jobs/{job_id}").json()["meeting"]
+    meeting_response = client.get(f"/api/meetings/{result['meeting_id']}")
+    assert meeting_response.status_code == 200
+    meeting = meeting_response.json()
     assert meeting["title"] == "demo"
+    assert meeting["source_type"] == "txt"
+    assert meeting["chunk_count"] == 1
     assert len(meeting["turns"]) == 2
     assert meeting["turns"][0]["speaker"] == "Alice"
     assert meeting["turns"][1]["speaker"] == "Bob"
 
 
-def test_rejects_unsupported_file_type():
+def test_rejects_unsupported_file_type(client):
     response = client.post(
         "/api/meetings",
         files={"file": ("notes.md", "# heading\nplain text\n", "text/markdown")},
@@ -54,7 +75,7 @@ def test_rejects_unsupported_file_type():
     assert "Unsupported file type" in response.json()["detail"]
 
 
-def test_rejects_files_above_size_limit():
+def test_rejects_files_above_size_limit(client):
     oversized_content = b"x" * (MAX_UPLOAD_SIZE_BYTES + 1)
     response = client.post(
         "/api/meetings",
@@ -65,7 +86,7 @@ def test_rejects_files_above_size_limit():
     assert "too large" in response.json()["detail"].lower()
 
 
-def test_rejects_duplicate_file_name_with_different_content():
+def test_rejects_duplicate_file_name_with_different_content(client):
     first_response = client.post(
         "/api/meetings",
         files={"file": ("duplicate.txt", "[00:00:01] Alice: first upload\n", "text/plain")},
@@ -79,3 +100,7 @@ def test_rejects_duplicate_file_name_with_different_content():
 
     assert second_response.status_code == 409
     assert "already exists" in second_response.json()["detail"].lower()
+
+
+def test_unknown_meeting_returns_404(client):
+    assert client.get("/api/meetings/does-not-exist").status_code == 404
