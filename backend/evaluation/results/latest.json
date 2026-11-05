@@ -1,0 +1,594 @@
+{
+  "meta": {
+    "run_at": "2026-11-05 16:31 UTC",
+    "model": "ollama:llama3.1",
+    "embedder": "BAAI/bge-small-en-v1.5",
+    "top_k": 6
+  },
+  "summary": {
+    "cases": 29,
+    "answerable": 24,
+    "unanswerable": 5,
+    "retrieval_hit_at_6": 1.0,
+    "retrieval_mrr": 0.958,
+    "answer_pass_rate": 1.0,
+    "cited_expected_line": 1.0,
+    "facts_present": 1.0,
+    "false_not_found": 0.0,
+    "correct_not_found": 1.0,
+    "overall_pass_rate": 1.0,
+    "median_latency_ms": 1591
+  },
+  "cases": [
+    {
+      "id": "launch-new-date",
+      "category": "decision",
+      "question": "When is the Ledger 2.0 launch now?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 2,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          7
+        ]
+      ],
+      "answer": "The Ledger 2.0 launch is now on November 17th. [product-launch-planning, 00:01:44, Priya]",
+      "latency_ms": 2974,
+      "prompt_tokens": 1748,
+      "output_tokens": 19
+    },
+    {
+      "id": "launch-why",
+      "category": "reasoning",
+      "question": "Why was the launch date moved?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          1
+        ],
+        [
+          "product-launch-planning",
+          3
+        ]
+      ],
+      "answer": "The launch date was moved because the payments integration was behind schedule, specifically the Stripe webhook handling was dropping events under load, and it would take two weeks to fix it. [product-launch-planning, 00:00:15, Marcus][product-launch-planning, 00:00:38, Marcus]",
+      "latency_ms": 1591,
+      "prompt_tokens": 1515,
+      "output_tokens": 40
+    },
+    {
+      "id": "launch-original-date",
+      "category": "fact",
+      "question": "What was the original launch date?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          0
+        ],
+        [
+          "product-launch-planning",
+          4
+        ]
+      ],
+      "answer": "The original launch date was November 3rd [product-launch-planning, 00:00:04, Priya][product-launch-planning, 00:00:55, Dana].",
+      "latency_ms": 2106,
+      "prompt_tokens": 1602,
+      "output_tokens": 15
+    },
+    {
+      "id": "team-tier-price",
+      "category": "fact",
+      "question": "How much does the Team tier cost per seat?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          11
+        ]
+      ],
+      "answer": "The Team tier costs 25 dollars per seat. [product-launch-planning, 00:03:14, Dana]",
+      "latency_ms": 464,
+      "prompt_tokens": 1300,
+      "output_tokens": 14
+    },
+    {
+      "id": "beta-pricing",
+      "category": "decision",
+      "question": "What price do beta customers pay for the Team tier?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          13
+        ]
+      ],
+      "answer": "Beta customers will pay $20 for the Team tier for the first year. [product-launch-planning, 00:03:40, Priya]",
+      "latency_ms": 2245,
+      "prompt_tokens": 1649,
+      "output_tokens": 19
+    },
+    {
+      "id": "pricing-tiers",
+      "category": "fact",
+      "question": "What pricing tiers were agreed?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          11
+        ]
+      ],
+      "answer": "Three tiers: Starter at 12 dollars per seat, Team at 25 dollars, and Enterprise is custom. Beta users said 30 for Team felt steep. [product-launch-planning, 00:03:14, Dana]",
+      "latency_ms": 1937,
+      "prompt_tokens": 1333,
+      "output_tokens": 36
+    },
+    {
+      "id": "press-release-owner",
+      "category": "action_item",
+      "question": "Who is updating the press release, and by when?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          8
+        ]
+      ],
+      "answer": "Dana is updating the press release, and she will have it updated and email both journalists by Wednesday. [product-launch-planning, 00:02:01, Dana]",
+      "latency_ms": 2778,
+      "prompt_tokens": 1551,
+      "output_tokens": 25
+    },
+    {
+      "id": "webhook-fix-owner",
+      "category": "action_item",
+      "question": "Who owns the webhook retry fix and when is it due?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          9
+        ]
+      ],
+      "answer": "Marcus owns the webhook retry fix and it is due by Friday [product-launch-planning, 00:02:12, Marcus].",
+      "latency_ms": 521,
+      "prompt_tokens": 1465,
+      "output_tokens": 16
+    },
+    {
+      "id": "onboarding-change",
+      "category": "fact",
+      "question": "What is Leo changing about the onboarding flow?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          18
+        ]
+      ],
+      "answer": "Leo is changing the bank connection step into two steps and adding a progress indicator. [product-launch-planning, 00:05:42, Leo]",
+      "latency_ms": 2637,
+      "prompt_tokens": 1544,
+      "output_tokens": 20
+    },
+    {
+      "id": "onboarding-due",
+      "category": "action_item",
+      "question": "When does the revised onboarding flow need to be ready?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "product-launch-planning",
+          19
+        ]
+      ],
+      "answer": "The revised onboarding flow needs to be ready for the design review next Tuesday. [product-launch-planning, 00:05:58, Priya]",
+      "latency_ms": 1910,
+      "prompt_tokens": 1387,
+      "output_tokens": 20
+    },
+    {
+      "id": "postgres-upgrade-when",
+      "category": "decision",
+      "question": "When will the production Postgres upgrade happen?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "engineering-standup",
+          2
+        ],
+        [
+          "engineering-standup",
+          3
+        ]
+      ],
+      "answer": "The production Postgres upgrade will happen on Saturday night. [engineering-standup, 00:00:28, Marcus][engineering-standup, 00:00:37, Aisha]",
+      "latency_ms": 475,
+      "prompt_tokens": 1577,
+      "output_tokens": 17
+    },
+    {
+      "id": "flaky-ci-cause",
+      "category": "reasoning",
+      "question": "Why are the integration tests flaky?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "engineering-standup",
+          6
+        ]
+      ],
+      "answer": "The fake payment server starts slower than the tests expect, and there's a hard-coded two second sleep that Tom wants to replace with a proper health check wait. [engineering-standup, 00:01:19, Tom]",
+      "latency_ms": 3544,
+      "prompt_tokens": 1745,
+      "output_tokens": 36
+    },
+    {
+      "id": "flaky-ci-owner",
+      "category": "action_item",
+      "question": "Who is fixing the flaky integration tests?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "engineering-standup",
+          7
+        ]
+      ],
+      "answer": "Tom is fixing the flaky integration tests this sprint. [engineering-standup, 00:01:39, Marcus]",
+      "latency_ms": 447,
+      "prompt_tokens": 1543,
+      "output_tokens": 15
+    },
+    {
+      "id": "webhook-incident",
+      "category": "fact",
+      "question": "What happened in the incident on Tuesday night?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "engineering-standup",
+          8
+        ]
+      ],
+      "answer": "The payment webhook endpoint timed out for about twenty minutes and we lost some events from Stripe. [engineering-standup, 00:02:40, Aisha]",
+      "latency_ms": 2754,
+      "prompt_tokens": 1517,
+      "output_tokens": 22
+    },
+    {
+      "id": "pager-alert",
+      "category": "action_item",
+      "question": "What alert are we adding, and who is setting it up?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "engineering-standup",
+          11
+        ]
+      ],
+      "answer": "A pager alert will be added when webhook failures exceed one percent. Aisha will set it up. [engineering-standup, 00:03:32, Marcus]",
+      "latency_ms": 709,
+      "prompt_tokens": 1521,
+      "output_tokens": 24
+    },
+    {
+      "id": "aisha-action-items",
+      "category": "speaker",
+      "question": "What action items does Aisha have?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "engineering-standup",
+          3
+        ],
+        [
+          "engineering-standup",
+          12
+        ]
+      ],
+      "answer": "Aisha has the following action items:\n\u2022 Take a fresh snapshot before the production upgrade [engineering-standup, 00:00:37, Aisha]\n\u2022 Set up a pager alert for webhook failures by Thursday [engineering-standup, 00:03:45, Aisha]",
+      "latency_ms": 3522,
+      "prompt_tokens": 1708,
+      "output_tokens": 35
+    },
+    {
+      "id": "csv-decision",
+      "category": "decision",
+      "question": "What did we decide about CSV export?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "customer-feedback-review",
+          7
+        ]
+      ],
+      "answer": "CSV export is the number one roadmap item for Q1. Priya will write the spec and share it by the end of next week. [customer-feedback-review, 00:01:15, Priya]",
+      "latency_ms": 3278,
+      "prompt_tokens": 1599,
+      "output_tokens": 32
+    },
+    {
+      "id": "churn-main-reason",
+      "category": "fact",
+      "question": "What is the main reason customers are churning?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "customer-feedback-review",
+          2
+        ],
+        [
+          "customer-feedback-review",
+          4
+        ]
+      ],
+      "answer": "The main reason customers are churning is missing CSV export, which is needed by accountants to get transactions into their own spreadsheets. [customer-feedback-review, 00:00:18, Sofia][customer-feedback-review, 00:00:39, Sofia]",
+      "latency_ms": 843,
+      "prompt_tokens": 1689,
+      "output_tokens": 33
+    },
+    {
+      "id": "csv-ticket-count",
+      "category": "fact",
+      "question": "How many support tickets mentioned CSV export last month?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "customer-feedback-review",
+          4
+        ]
+      ],
+      "answer": "Forty-two tickets last month mentioned CSV export as the reason for leaving the service [customer-feedback-review, 00:00:39, Sofia].",
+      "latency_ms": 556,
+      "prompt_tokens": 1583,
+      "output_tokens": 20
+    },
+    {
+      "id": "csv-customer-note",
+      "category": "action_item",
+      "question": "Who will tell customers that CSV export is coming?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 2,
+      "found": true,
+      "cited": [
+        [
+          "customer-feedback-review",
+          13
+        ]
+      ],
+      "answer": "Sofia will tell customers that CSV export is coming, by sending a note to the people who requested it by Friday [customer-feedback-review, 00:03:10, Sofia].",
+      "latency_ms": 2611,
+      "prompt_tokens": 1378,
+      "output_tokens": 28
+    },
+    {
+      "id": "bank-connection-problems",
+      "category": "cross_meeting",
+      "question": "What problems have been reported with the bank connection step?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "customer-feedback-review",
+          9
+        ],
+        [
+          "product-launch-planning",
+          16
+        ]
+      ],
+      "answer": "People don't understand the bank connection step and they open chat to ask about it [customer-feedback-review, 00:02:35, Priya]. In usability tests, about half of testers got stuck there [product-launch-planning, 00:05:18, Leo].",
+      "latency_ms": 3293,
+      "prompt_tokens": 1748,
+      "output_tokens": 34
+    },
+    {
+      "id": "webhook-fix-approach",
+      "category": "cross_meeting",
+      "question": "How is the webhook problem being fixed?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "engineering-standup",
+          9
+        ],
+        [
+          "product-launch-planning",
+          3
+        ]
+      ],
+      "answer": "The webhook problem is being fixed with retries with exponential backoff and an idempotency check. [engineering-standup, 00:03:03, Marcus][product-launch-planning, 00:00:38, Marcus]",
+      "latency_ms": 687,
+      "prompt_tokens": 1461,
+      "output_tokens": 26
+    },
+    {
+      "id": "mobile-speed-paraphrase",
+      "category": "paraphrase",
+      "question": "Are there concerns about how fast the mobile app is?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "customer-feedback-review",
+          10
+        ]
+      ],
+      "answer": "Yes. There are complaints about the mobile app being slow to load the dashboard, but the volume is smaller compared to other issues. [customer-feedback-review, 00:02:41, Sofia]",
+      "latency_ms": 768,
+      "prompt_tokens": 1665,
+      "output_tokens": 30
+    },
+    {
+      "id": "standup-decisions-scoped",
+      "category": "scoped",
+      "question": "What was decided?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": 1,
+      "found": true,
+      "cited": [
+        [
+          "engineering-standup",
+          2
+        ],
+        [
+          "engineering-standup",
+          7
+        ],
+        [
+          "engineering-standup",
+          11
+        ],
+        [
+          "engineering-standup",
+          3
+        ],
+        [
+          "engineering-standup",
+          12
+        ]
+      ],
+      "answer": "The following decisions were made:\n\n\u2022 The production upgrade will be done on Saturday night. [engineering-standup, 00:00:28, Marcus]\n\u2022 Tom will fix the flaky integration tests this sprint. [engineering-standup, 00:01:39, Marcus]\n\u2022 A pager alert will be added when webhook failures exceed one percent. [engineering-standup, 00:03:32, Marcus]\n\nAdditionally, the following action items were assigned:\n\n\u2022 Aisha will take a fresh snapshot before the production upgrade. [engineering-standup, 00:00:37, Aisha]\n\u2022 Tom will fix the flaky integration tests. [engineering-standup, 00:01:39, Marcus]\n\u2022 Aisha will set up a pager alert for webhook failures by Thursday. [engineering-standup, 00:03:45, Aisha]",
+      "latency_ms": 2875,
+      "prompt_tokens": 757,
+      "output_tokens": 109
+    },
+    {
+      "id": "no-marketing-budget",
+      "category": "unanswerable",
+      "question": "What is the marketing budget for Q1?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": null,
+      "found": false,
+      "cited": [],
+      "answer": "I couldn't find anything about that in the meeting transcripts.",
+      "latency_ms": 420,
+      "prompt_tokens": 1377,
+      "output_tokens": 13
+    },
+    {
+      "id": "no-ceo",
+      "category": "unanswerable",
+      "question": "Who is the CEO of the company?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": null,
+      "found": false,
+      "cited": [],
+      "answer": "I couldn't find anything about that in the meeting transcripts.",
+      "latency_ms": 30,
+      "prompt_tokens": null,
+      "output_tokens": null
+    },
+    {
+      "id": "no-hiring",
+      "category": "unanswerable",
+      "question": "What did we decide about hiring new engineers?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": null,
+      "found": false,
+      "cited": [],
+      "answer": "I couldn't find anything about that in the meeting transcripts.",
+      "latency_ms": 993,
+      "prompt_tokens": 1277,
+      "output_tokens": 13
+    },
+    {
+      "id": "no-weather",
+      "category": "unanswerable",
+      "question": "What's the weather in Paris?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": null,
+      "found": false,
+      "cited": [],
+      "answer": "I couldn't find anything about that in the meeting transcripts.",
+      "latency_ms": 32,
+      "prompt_tokens": null,
+      "output_tokens": null
+    },
+    {
+      "id": "no-android",
+      "category": "unanswerable",
+      "question": "When is the Android app release planned?",
+      "passed": true,
+      "failure": "",
+      "retrieval_rank": null,
+      "found": false,
+      "cited": [],
+      "answer": "I couldn't find anything about that in the meeting transcripts.",
+      "latency_ms": 377,
+      "prompt_tokens": 1248,
+      "output_tokens": 13
+    }
+  ]
+}

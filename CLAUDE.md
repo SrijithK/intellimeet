@@ -17,7 +17,8 @@ changes to the stack or architecture.
   every request logged to the `queries` table).
   Epic 4 frontend (chat with streamed, clickable citations; meeting detail; upload with job status).
   5.3 Docker Compose (postgres + api + nginx frontend; `data/transcripts` auto-ingested on startup).
-- Next: 5.2 golden-set eval, README, GitHub Actions CI. Not built yet: Anthropic LLM provider,
+  5.2 golden-set eval (`backend/evaluation/`; latest report in `evaluation/results/latest.md`).
+- Next: README, GitHub Actions CI. Not built yet: Anthropic LLM provider,
   JSON logs/request IDs, chat history for follow-up questions.
 - LLM: the user has no Anthropic API key, so the active provider is Ollama (`llama3.1`) on the host.
   Anthropic stays the intended provider behind `LLMProvider` once a key exists (see D3).
@@ -59,6 +60,9 @@ From `backend/` (with `docker compose up -d postgres` running; dev deps: `pip in
 - Lint/format: `.venv/bin/ruff check . && .venv/bin/ruff format --check .`
 - Migrate dev DB: `.venv/bin/alembic upgrade head`; check models vs schema: `.venv/bin/alembic check`
 - Run API: `.venv/bin/uvicorn app.main:app --reload` (Swagger UI at `/docs`)
+- Golden-set eval (needs Ollama; own DB `intellimeet_eval`): `.venv/bin/python -m evaluation.run_eval`
+  (`--reuse` skips re-ingestion). Commit the updated `evaluation/results/latest.*` when it changes.
+  The retrieval-only slice runs in pytest (`tests/test_evaluation.py`) as a CI quality gate.
 - API contract: `docs/openapi.json`, generated from `app/schemas.py` + routes. After any API change run
   `.venv/bin/python -m scripts.export_openapi` and commit; `tests/test_contract.py` fails if it drifts.
 
