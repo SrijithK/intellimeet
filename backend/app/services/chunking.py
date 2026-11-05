@@ -1,50 +1,70 @@
 from __future__ import annotations
 
-from app.models import Meeting, MeetingChunk
+from typing import List
+
+from app.models import Meeting, TranscriptChunk, TranscriptTurn
+
+DEFAULT_WINDOW_SECONDS = 90.0
+DEFAULT_MAX_CHARS = 1000
 
 
-def chunk_meeting(meeting: Meeting, max_turns: int = 2, max_chars: int = 300) -> list[MeetingChunk]:
-    chunks: list[MeetingChunk] = []
-    buffer: list[MeetingChunk] = []
-    current_length = 0
-    current_start = None
+def chunk_meeting(
+    meeting: Meeting,
+    window_seconds: float = DEFAULT_WINDOW_SECONDS,
+    max_chars: int = DEFAULT_MAX_CHARS,
+) -> List[TranscriptChunk]:
+    """Group whole turns into time windows, overlapping by one turn.
 
-    for turn in meeting.turns:
-        turn_text = turn.text.strip()
-        if not turn_text:
-            continue
+    A chunk closes when adding the next turn would exceed ``window_seconds`` (measured
+    from the chunk's first turn) or ``max_chars``. Turns are never split, so a single
+    very long turn becomes its own chunk. The last turn of each chunk is repeated as the
+    first turn of the next one, so an exchange that straddles a boundary stays together.
+    Turn indices refer to positions in ``meeting.turns``.
+    """
+    indexed = [(i, turn) for i, turn in enumerate(meeting.turns) if turn.text.strip()]
+    chunks: List[TranscriptChunk] = []
+    window: List[tuple] = []
 
-        chunk = MeetingChunk(
-            speaker=turn.speaker,
-            text=turn_text,
-            start=turn.start,
-            end=turn.end or turn.start,
-        )
+    for idx, turn in indexed:
+        if window and _would_overflow(window, turn, window_seconds, max_chars):
+            chunks.append(_build_chunk(window))
+            # Carry the last turn over as overlap, unless it alone is what's full.
+            window = window[-1:] if len(window) > 1 else []
+            if window and _would_overflow(window, turn, window_seconds, max_chars):
+                window = []
+        window.append((idx, turn))
 
-        if not buffer:
-            buffer.append(chunk)
-            current_length = len(turn_text)
-            current_start = turn.start
-            continue
-
-        if len(" ".join(item.text for item in buffer) + " " + turn_text) > max_chars or len(buffer) >= max_turns:
-            chunks.append(_flatten_chunk(buffer, current_start))
-            buffer = [chunk]
-            current_length = len(turn_text)
-            current_start = turn.start
-            continue
-
-        buffer.append(chunk)
-        current_length = len(" ".join(item.text for item in buffer))
-
-    if buffer:
-        chunks.append(_flatten_chunk(buffer, current_start))
+    if window:
+        last = _build_chunk(window)
+        # Skip a trailing chunk that only repeats the previous chunk's overlap turn.
+        if not chunks or last.last_turn_idx > chunks[-1].last_turn_idx:
+            chunks.append(last)
 
     return chunks
 
 
-def _flatten_chunk(buffer: list[MeetingChunk], start: int | None) -> MeetingChunk:
-    speaker = buffer[0].speaker
-    text = " ".join(item.text for item in buffer)
-    end = max(item.end for item in buffer) if buffer else start
-    return MeetingChunk(speaker=speaker, text=text, start=start or 0, end=end)
+def _line(turn: TranscriptTurn) -> str:
+    return f"{turn.speaker}: {turn.text.strip()}"
+
+
+def _would_overflow(window, turn: TranscriptTurn, window_seconds: float, max_chars: int) -> bool:
+    duration = turn.start - window[0][1].start
+    length = sum(len(_line(t)) + 1 for _, t in window) + len(_line(turn))
+    return duration > window_seconds or length > max_chars
+
+
+def _build_chunk(window) -> TranscriptChunk:
+    turns = [turn for _, turn in window]
+    speakers: List[str] = []
+    for turn in turns:
+        if turn.speaker not in speakers:
+            speakers.append(turn.speaker)
+    last = turns[-1]
+    return TranscriptChunk(
+        first_turn_idx=window[0][0],
+        last_turn_idx=window[-1][0],
+        speakers=speakers,
+        text="\n".join(_line(turn) for turn in turns),
+        start=turns[0].start,
+        end=last.end if last.end is not None else last.start,
+    )
