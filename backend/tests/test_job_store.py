@@ -1,8 +1,8 @@
 from app.services.job_store import JobStore
 
 
-def test_job_store_persists_jobs_and_retrieves_by_id():
-    store = JobStore(database_url="sqlite:///:memory:")
+def test_job_store_persists_jobs_and_retrieves_by_id(session_factory):
+    store = JobStore(session_factory)
 
     job = store.create_job("demo.txt", b"hello world")
     persisted = store.get_job(job["job_id"])

@@ -7,16 +7,15 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
-from app.db import Base, build_engine
+from app.db import build_session_factory
 from app.db_models import JobRecord
 
 
 class JobStore:
-    def __init__(self, database_url: Optional[str] = None):
-        self.database_url = database_url
-        self.engine = build_engine(database_url)
-        self.session_factory = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
-        Base.metadata.create_all(bind=self.engine)
+    """Persists ingestion job status. Schema is owned by Alembic migrations."""
+
+    def __init__(self, session_factory: Optional[sessionmaker] = None):
+        self.session_factory = session_factory or build_session_factory()
 
     def create_job(self, file_name: str, content: bytes) -> dict[str, object]:
         content_hash = hashlib.sha256(content).hexdigest()
