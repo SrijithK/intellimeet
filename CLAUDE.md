@@ -12,8 +12,12 @@ changes to the stack or architecture.
 - Stack and architecture: finalised. Delivery plan: [docs/stories.md](docs/stories.md).
 - Done: Stories 1.1-1.3, 2.1 (ingestion: parse -> chunk -> embed -> persist), 2.2 (hybrid retrieval,
   `GET /api/search`).
-- Next: Story 2.3 (structured extraction). Not built yet: chat, frontend, Docker images for api/frontend,
-  seed auto-ingest on startup (sample transcripts already in `seed/`).
+  2.3 (structured extraction via local Ollama; decisions/action items/topics linked to source turns).
+- Next: Story 3.1 (chat API). Not built yet: chat, frontend, Docker images for api/frontend,
+  seed auto-ingest on startup (sample transcripts already in `seed/`), Anthropic LLM provider.
+- LLM: the user has no Anthropic API key, so the active provider is Ollama (`llama3.1`) on the host.
+  Anthropic stays the intended provider behind `LLMProvider` once a key exists (see D3).
+  Small local models copy concrete examples from prompts verbatim: keep prompts free of example facts.
 - Local venv is Python 3.9 (only Python on the machine); keep code 3.9-compatible
   (`Optional[...]`, not `X | None`, in runtime-evaluated annotations). Containers will use 3.12.
 
@@ -27,13 +31,15 @@ backend/
   app/models.py             canonical dataclasses: Meeting, TranscriptTurn, TranscriptChunk
   app/db_models.py          SQLAlchemy tables (schema owned by Alembic)
   app/parsers/              TranscriptSource registry + txt/vtt parsers
-  app/services/             ingestion, chunking, embedder, job_store, job_queue, meeting_store, retrieval
+  app/llm/                  LLMProvider interface + Ollama provider (schema-constrained JSON)
+  app/services/             ingestion, chunking, embedder, extraction, job_store, job_queue, meeting_store, retrieval
   migrations/               Alembic; hand-written migrations
   tests/                    pytest against real Postgres (intellimeet_test DB, auto-created)
 ```
 
 From `backend/` (with `docker compose up -d postgres` running):
-- Tests: `.venv/bin/python -m pytest -q` (embedder tests use the real model; first run downloads it)
+- Tests: `.venv/bin/python -m pytest -q` (embedder tests use the real model; first run downloads it).
+  Live LLM test: `RUN_LLM_TESTS=1 .venv/bin/python -m pytest -q` (needs Ollama with `llama3.1`)
 - Lint/format: `.venv/bin/ruff check . && .venv/bin/ruff format --check .`
 - Migrate dev DB: `.venv/bin/alembic upgrade head`; check models vs schema: `.venv/bin/alembic check`
 - Run API: `.venv/bin/uvicorn app.main:app --reload`
@@ -45,7 +51,7 @@ From `backend/` (with `docker compose up -d postgres` running):
 | Frontend | React + TypeScript (Vite), Tailwind, shadcn/ui; streaming answers over SSE |
 | Backend | Python, FastAPI, SQLAlchemy/SQLModel, Alembic migrations |
 | Data | Postgres + pgvector (vectors, full-text `tsvector`, relational tables in one DB) |
-| LLM | Claude via Anthropic API: `claude-sonnet-5-5` for answers, `claude-haiku-4-5` for ingestion-time extraction |
+| LLM | Behind `LLMProvider`. Now: Ollama `llama3.1` (local, no key). Planned: Claude via Anthropic API (`claude-sonnet-5-5` answers, `claude-haiku-4-5` extraction) |
 | Embeddings | Local `bge-small-en` via fastembed (ONNX, no PyTorch) |
 | Orchestration | No framework: Anthropic SDK + our own retrieval/prompt code |
 | Quality | pytest, Vitest, golden-set retrieval/answer eval, GitHub Actions CI |

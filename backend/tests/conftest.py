@@ -8,6 +8,8 @@ TEST_DATABASE_URL = os.getenv(
     "postgresql+psycopg://intellimeet:intellimeet@localhost:5433/intellimeet_test",
 )
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+# No live LLM calls by default; tests that exercise extraction inject a fake (or opt into Ollama).
+os.environ["EXTRACTION_ENABLED"] = "false"
 
 import pytest  # noqa: E402
 from alembic import command  # noqa: E402
@@ -47,7 +49,9 @@ def migrated_database() -> None:
 def clean_tables(migrated_database) -> None:
     engine = create_engine(TEST_DATABASE_URL)
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE jobs, meetings, turns, chunks RESTART IDENTITY CASCADE"))
+        conn.execute(
+            text("TRUNCATE jobs, meetings, turns, chunks, decisions, action_items, topics RESTART IDENTITY CASCADE")
+        )
     engine.dispose()
 
 

@@ -4,11 +4,19 @@ from collections.abc import Sequence
 from typing import Any, Optional
 from uuid import uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from app.db_models import ChunkRecord, MeetingRecord, TurnRecord
+from app.db_models import (
+    ActionItemRecord,
+    ChunkRecord,
+    DecisionRecord,
+    MeetingRecord,
+    TopicRecord,
+    TurnRecord,
+)
 from app.models import Meeting, TranscriptChunk
+from app.services.extraction import Extraction
 
 
 def find_meeting_id_by_hash(session: Session, content_hash: str) -> Optional[str]:
@@ -66,6 +74,48 @@ def save_meeting(
     return meeting_id
 
 
+def save_extraction(session: Session, meeting_id: str, extraction: Extraction) -> None:
+    """Replace the meeting's extracted records and mark extraction completed (caller commits)."""
+    for model in (DecisionRecord, ActionItemRecord, TopicRecord):
+        session.execute(delete(model).where(model.meeting_id == meeting_id))
+    session.add_all(
+        DecisionRecord(meeting_id=meeting_id, turn_idx=d.turn_idx, text=d.text) for d in extraction.decisions
+    )
+    session.add_all(
+        ActionItemRecord(meeting_id=meeting_id, turn_idx=a.turn_idx, owner=a.owner, task=a.task, due=a.due)
+        for a in extraction.action_items
+    )
+    session.add_all(TopicRecord(meeting_id=meeting_id, turn_idx=t.turn_idx, label=t.label) for t in extraction.topics)
+    set_extraction_status(session, meeting_id, "completed")
+
+
+def set_extraction_status(session: Session, meeting_id: str, status: str, error: Optional[str] = None) -> None:
+    session.execute(
+        update(MeetingRecord)
+        .where(MeetingRecord.id == meeting_id)
+        .values(extraction_status=status, extraction_error=error)
+    )
+
+
+def _with_source_turn(session: Session, model, meeting_id: str, fields: Sequence[str]) -> list[dict[str, Any]]:
+    """Extracted records plus the speaker/timestamp of the turn each one cites."""
+    rows = session.execute(
+        select(model, TurnRecord.speaker, TurnRecord.start_ts)
+        .join(TurnRecord, (TurnRecord.meeting_id == model.meeting_id) & (TurnRecord.idx == model.turn_idx))
+        .where(model.meeting_id == meeting_id)
+        .order_by(model.turn_idx, model.id)
+    ).all()
+    return [
+        {
+            **{name: getattr(record, name) for name in fields},
+            "turn_idx": record.turn_idx,
+            "speaker": speaker,
+            "start": start,
+        }
+        for record, speaker, start in rows
+    ]
+
+
 def get_meeting(session: Session, meeting_id: str) -> Optional[dict[str, Any]]:
     record = session.get(MeetingRecord, meeting_id)
     if record is None:
@@ -87,5 +137,10 @@ def get_meeting(session: Session, meeting_id: str) -> Optional[dict[str, Any]]:
         "media_uri": record.media_uri,
         "created_at": record.created_at.isoformat() if record.created_at else None,
         "chunk_count": chunk_count,
+        "extraction_status": record.extraction_status,
+        "extraction_error": record.extraction_error,
+        "decisions": _with_source_turn(session, DecisionRecord, meeting_id, ["text"]),
+        "action_items": _with_source_turn(session, ActionItemRecord, meeting_id, ["owner", "task", "due"]),
+        "topics": _with_source_turn(session, TopicRecord, meeting_id, ["label"]),
         "turns": turn_list,
     }

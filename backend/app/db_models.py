@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -43,6 +44,8 @@ class MeetingRecord(Base):
     media_uri = Column(String, nullable=True)  # for future voice ingestion
     meeting_date = Column(DateTime(timezone=True), nullable=True)
     content_hash = Column(String, nullable=False, unique=True)
+    extraction_status = Column(String, nullable=False, server_default="pending")  # pending|completed|failed|skipped
+    extraction_error = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
@@ -81,3 +84,40 @@ class ChunkRecord(Base):
     end_ts = Column(Float, nullable=True)
     embedding = Column(Vector(EMBEDDING_DIM), nullable=False)
     tsv = Column(TSVECTOR, Computed("to_tsvector('english', text)", persisted=True))
+
+
+def _source_turn_fk() -> ForeignKeyConstraint:
+    """Every extracted record points at the turn it came from (for citations)."""
+    return ForeignKeyConstraint(["meeting_id", "turn_idx"], ["turns.meeting_id", "turns.idx"], ondelete="CASCADE")
+
+
+class DecisionRecord(Base):
+    __tablename__ = "decisions"
+    __table_args__ = (_source_turn_fk(),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    meeting_id = Column(String, nullable=False, index=True)
+    turn_idx = Column(Integer, nullable=False)
+    text = Column(Text, nullable=False)
+
+
+class ActionItemRecord(Base):
+    __tablename__ = "action_items"
+    __table_args__ = (_source_turn_fk(),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    meeting_id = Column(String, nullable=False, index=True)
+    turn_idx = Column(Integer, nullable=False)
+    owner = Column(String, nullable=False)
+    task = Column(Text, nullable=False)
+    due = Column(String, nullable=True)  # as spoken, e.g. "by Friday"; not resolved to a date
+
+
+class TopicRecord(Base):
+    __tablename__ = "topics"
+    __table_args__ = (_source_turn_fk(),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    meeting_id = Column(String, nullable=False, index=True)
+    turn_idx = Column(Integer, nullable=False)
+    label = Column(String, nullable=False)
