@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import threading
-from typing import List, Optional, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Optional, Protocol
 
 from app.db_models import EMBEDDING_DIM
 
@@ -13,9 +14,9 @@ class Embedder(Protocol):
 
     dim: int
 
-    def embed_documents(self, texts: Sequence[str]) -> List[List[float]]: ...
+    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]: ...
 
-    def embed_query(self, text: str) -> List[float]: ...
+    def embed_query(self, text: str) -> list[float]: ...
 
 
 class FastEmbedEmbedder:
@@ -41,13 +42,13 @@ class FastEmbedEmbedder:
                     self._model = TextEmbedding(model_name=self.model_name)
         return self._model
 
-    def embed_documents(self, texts: Sequence[str]) -> List[List[float]]:
+    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         if not texts:
             return []
         vectors = self._get_model().embed(list(texts), batch_size=self.batch_size)
         return [vector.tolist() for vector in vectors]
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         return next(iter(self._get_model().query_embed(text))).tolist()
 
 

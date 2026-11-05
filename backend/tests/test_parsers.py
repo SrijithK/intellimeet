@@ -49,7 +49,11 @@ def test_registry_picks_parser_by_extension_and_sets_source_type():
         parse_transcript("notes.md", "# hi")
 
 
-ZOOM_VTT = "WEBVTT\n\n1\n00:00:01.000 --> 00:00:04.000\nAlice: Hello\n\n2\n00:00:05.000 --> 00:00:07.250 align:start\nBob: Hi there\n"
+ZOOM_VTT = (
+    "WEBVTT\n\n"
+    "1\n00:00:01.000 --> 00:00:04.000\nAlice: Hello\n\n"
+    "2\n00:00:05.000 --> 00:00:07.250 align:start\nBob: Hi there\n"
+)
 
 
 def test_vtt_with_cue_identifiers_and_cue_settings():
@@ -66,7 +70,10 @@ def test_vtt_with_windows_line_endings():
 
 
 def test_vtt_voice_tags_and_multiline_payload():
-    vtt = "WEBVTT\n\nNOTE exported from Teams\n\n00:00:01.000 --> 00:00:03.000\n<v Alice Smith>Let's ship\n<i>on Friday</i>.</v>\n"
+    vtt = (
+        "WEBVTT\n\nNOTE exported from Teams\n\n"
+        "00:00:01.000 --> 00:00:03.000\n<v Alice Smith>Let's ship\n<i>on Friday</i>.</v>\n"
+    )
 
     (turn,) = parse_vtt_transcript("teams.vtt", vtt).turns
 
@@ -80,6 +87,7 @@ def test_vtt_short_timestamps_and_missing_speaker():
 
 
 def test_txt_continuation_lines_join_previous_turn():
-    meeting = parse_txt_transcript("a.txt", "intro junk\n[00:00:01] Alice: first part\nsecond part\n[00:00:09] Bob: ok\n")
+    text = "intro junk\n[00:00:01] Alice: first part\nsecond part\n[00:00:09] Bob: ok\n"
+    meeting = parse_txt_transcript("a.txt", text)
 
     assert [(t.speaker, t.text) for t in meeting.turns] == [("Alice", "first part second part"), ("Bob", "ok")]

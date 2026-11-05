@@ -9,3 +9,13 @@ dependencies = []
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+# FastAPI's File(...) default and SQLAlchemy Column(...) defaults trip B008.
+ignore = ["B008", "UP007"]  # UP007: keep Optional[...]; "X | None" breaks runtime-evaluated annotations on 3.9

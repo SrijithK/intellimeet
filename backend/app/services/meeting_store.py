@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, Optional
 from uuid import uuid4
 
 from sqlalchemy import func, select
@@ -65,7 +66,7 @@ def save_meeting(
     return meeting_id
 
 
-def get_meeting(session: Session, meeting_id: str) -> Optional[Dict[str, Any]]:
+def get_meeting(session: Session, meeting_id: str) -> Optional[dict[str, Any]]:
     record = session.get(MeetingRecord, meeting_id)
     if record is None:
         return None
@@ -75,9 +76,8 @@ def get_meeting(session: Session, meeting_id: str) -> Optional[Dict[str, Any]]:
     chunk_count = session.execute(
         select(func.count()).select_from(ChunkRecord).where(ChunkRecord.meeting_id == meeting_id)
     ).scalar_one()
-    turn_list: List[Dict[str, Any]] = [
-        {"idx": t.idx, "speaker": t.speaker, "text": t.text, "start": t.start_ts, "end": t.end_ts}
-        for t in turns
+    turn_list: list[dict[str, Any]] = [
+        {"idx": t.idx, "speaker": t.speaker, "text": t.text, "start": t.start_ts, "end": t.end_ts} for t in turns
     ]
     return {
         "id": record.id,

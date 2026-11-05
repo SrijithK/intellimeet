@@ -7,7 +7,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from app.services import meeting_store
 from app.services.ingestion import ingestion_service
 from app.services.job_queue import InProcessJobQueue
-from app.validation import MAX_UPLOAD_SIZE_BYTES, validate_upload
+from app.validation import validate_upload
 
 job_queue = InProcessJobQueue(ingestion_service.process_job)
 

@@ -6,10 +6,10 @@ from app.services.ingestion import IngestionService
 from tests.fakes import FakeEmbedder
 
 TRANSCRIPT = (
-    "[00:00:05] Alice: We decided to move the launch to March.\n"
-    "[00:00:40] Bob: I will update the rollout checklist by Friday.\n"
-    "[00:01:50] Carol: Next topic is hiring.\n"
-).encode()
+    b"[00:00:05] Alice: We decided to move the launch to March.\n"
+    b"[00:00:40] Bob: I will update the rollout checklist by Friday.\n"
+    b"[00:01:50] Carol: Next topic is hiring.\n"
+)
 
 
 @pytest.fixture

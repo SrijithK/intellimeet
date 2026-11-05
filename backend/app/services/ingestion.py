@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
@@ -41,10 +41,10 @@ class IngestionService:
     def embedder(self, value: Embedder) -> None:
         self._embedder = value
 
-    def create_job(self, file_name: str, content: bytes) -> Dict[str, Any]:
+    def create_job(self, file_name: str, content: bytes) -> dict[str, Any]:
         return self.job_store.create_job(file_name, content)
 
-    def get_job(self, job_id: str) -> Dict[str, Any]:
+    def get_job(self, job_id: str) -> dict[str, Any]:
         return self.job_store.get_job(job_id)
 
     async def process_job(self, job_id: str, file_name: str, content: bytes) -> None:
@@ -57,7 +57,7 @@ class IngestionService:
             logger.exception("Ingestion failed for job %s (%s)", job_id, file_name)
             self.job_store.update_status(job_id, "failed", error=str(exc))
 
-    def ingest(self, file_name: str, content: bytes) -> Dict[str, Any]:
+    def ingest(self, file_name: str, content: bytes) -> dict[str, Any]:
         content_hash = hashlib.sha256(content).hexdigest()
 
         with self.session_factory() as session:

@@ -35,5 +35,5 @@ def test_empty_input_returns_empty_list(embedder):
 
 
 def test_unknown_model_raises_instead_of_falling_back():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         FastEmbedEmbedder(model_name="not-a-real/model").embed_documents(["hello"])

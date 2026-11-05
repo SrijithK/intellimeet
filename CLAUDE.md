@@ -9,9 +9,31 @@ changes to the stack or architecture.
 
 ## Status
 
-- Stack and architecture: finalised.
-- Folder structure, modules, build/test commands: not yet defined. Update this file when they are.
-- Nothing is built yet. Do not scaffold or write application code until the user says go.
+- Stack and architecture: finalised. Delivery plan: [docs/stories.md](docs/stories.md).
+- Done: Stories 1.1-1.3, 2.1 (ingestion: parse -> chunk -> embed -> persist in Postgres).
+- Next: Story 2.2 (hybrid retrieval). Not built yet: extraction, chat, frontend, Docker images for api/frontend.
+- Local venv is Python 3.9 (only Python on the machine); keep code 3.9-compatible
+  (`Optional[...]`, not `X | None`, in runtime-evaluated annotations). Containers will use 3.12.
+
+## Layout and commands
+
+```
+docker-compose.yml          postgres (pgvector) on host port 5433
+backend/
+  app/main.py               FastAPI routes
+  app/models.py             canonical dataclasses: Meeting, TranscriptTurn, TranscriptChunk
+  app/db_models.py          SQLAlchemy tables (schema owned by Alembic)
+  app/parsers/              TranscriptSource registry + txt/vtt parsers
+  app/services/             ingestion, chunking, embedder, job_store, job_queue, meeting_store
+  migrations/               Alembic; hand-written migrations
+  tests/                    pytest against real Postgres (intellimeet_test DB, auto-created)
+```
+
+From `backend/` (with `docker compose up -d postgres` running):
+- Tests: `.venv/bin/python -m pytest -q` (embedder tests use the real model; first run downloads it)
+- Lint/format: `.venv/bin/ruff check . && .venv/bin/ruff format --check .`
+- Migrate dev DB: `.venv/bin/alembic upgrade head`; check models vs schema: `.venv/bin/alembic check`
+- Run API: `.venv/bin/uvicorn app.main:app --reload`
 
 ## Stack
 

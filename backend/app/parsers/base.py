@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, FrozenSet, NamedTuple
+from typing import Callable, NamedTuple
 
 from app.models import Meeting
 
@@ -11,11 +11,11 @@ class TranscriptSource(NamedTuple):
     """An input format that can be turned into the canonical Meeting model."""
 
     source_type: str  # stored on meetings.source_type
-    extensions: FrozenSet[str]
+    extensions: frozenset[str]
     parse: ParseFn
 
 
-_SOURCES: Dict[str, TranscriptSource] = {}
+_SOURCES: dict[str, TranscriptSource] = {}
 
 
 def register_source(source: TranscriptSource) -> None:
@@ -27,7 +27,7 @@ def file_extension(file_name: str) -> str:
     return file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
 
 
-def supported_extensions() -> FrozenSet[str]:
+def supported_extensions() -> frozenset[str]:
     return frozenset(_SOURCES)
 
 

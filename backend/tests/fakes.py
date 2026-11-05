@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from typing import List, Sequence
+from collections.abc import Sequence
 
 from app.db_models import EMBEDDING_DIM
 
@@ -11,12 +11,12 @@ class FakeEmbedder:
 
     dim = EMBEDDING_DIM
 
-    def embed_documents(self, texts: Sequence[str]) -> List[List[float]]:
+    def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         return [self._vector(text) for text in texts]
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         return self._vector(text)
 
-    def _vector(self, text: str) -> List[float]:
+    def _vector(self, text: str) -> list[float]:
         digest = hashlib.sha256(text.encode("utf-8")).digest()
         return [digest[i % len(digest)] / 255.0 for i in range(self.dim)]

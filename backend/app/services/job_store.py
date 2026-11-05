@@ -21,9 +21,7 @@ class JobStore:
         content_hash = hashlib.sha256(content).hexdigest()
 
         with self.session_factory() as session:
-            existing = session.execute(
-                select(JobRecord).where(JobRecord.file_name == file_name)
-            ).scalar_one_or_none()
+            existing = session.execute(select(JobRecord).where(JobRecord.file_name == file_name)).scalar_one_or_none()
             if existing is not None:
                 if existing.meeting is not None and existing.meeting.get("content_hash") == content_hash:
                     return {
@@ -66,7 +64,13 @@ class JobStore:
                 "error": job.error,
             }
 
-    def update_status(self, job_id: str, status: str, meeting: Optional[dict[str, object]] = None, error: Optional[str] = None) -> dict[str, object]:
+    def update_status(
+        self,
+        job_id: str,
+        status: str,
+        meeting: Optional[dict[str, object]] = None,
+        error: Optional[str] = None,
+    ) -> dict[str, object]:
         with self.session_factory() as session:
             job = session.get(JobRecord, job_id)
             if job is None:

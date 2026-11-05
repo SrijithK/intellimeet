@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    JSON,
     Column,
     Computed,
     DateTime,
@@ -9,7 +10,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Awaitable, Callable, Protocol, Set
+from collections.abc import Awaitable
+from typing import Callable, Protocol
 
 JobHandler = Callable[[str, str, bytes], Awaitable[None]]  # (job_id, file_name, content)
 
@@ -18,7 +19,7 @@ class InProcessJobQueue:
     def __init__(self, handler: JobHandler) -> None:
         self._handler = handler
         # asyncio only keeps weak references to tasks; hold them until they finish.
-        self._tasks: Set[asyncio.Task] = set()
+        self._tasks: set[asyncio.Task] = set()
 
     async def submit(self, job_id: str, file_name: str, content: bytes) -> None:
         task = asyncio.create_task(self._handler(job_id, file_name, content))

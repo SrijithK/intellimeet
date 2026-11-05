@@ -9,7 +9,6 @@ from app.validation import MAX_UPLOAD_SIZE_BYTES
 from tests.fakes import FakeEmbedder
 
 
-
 @pytest.fixture(scope="module")
 def client():
     # Context manager keeps one event loop alive so background jobs can finish.

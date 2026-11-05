@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from app.models import Meeting, TranscriptTurn
 
@@ -18,7 +18,7 @@ def _seconds(hours: Optional[str], minutes: str, seconds: str, millis: str) -> f
     return int(hours or 0) * 3600 + int(minutes) * 60 + int(seconds) + int(millis) / 1000
 
 
-def _speaker_and_text(payload: str) -> Tuple[str, str]:
+def _speaker_and_text(payload: str) -> tuple[str, str]:
     voice = VOICE_RE.search(payload)
     if voice:
         return voice.group(1).strip(), TAG_RE.sub("", payload).strip()
@@ -35,7 +35,7 @@ def parse_vtt_transcript(file_name: str, content: str) -> Meeting:
 
     normalized = content.replace("\r\n", "\n").replace("\r", "\n")
     for block in re.split(r"\n\s*\n", normalized):
-        lines: List[str] = [line.strip() for line in block.split("\n") if line.strip()]
+        lines: list[str] = [line.strip() for line in block.split("\n") if line.strip()]
         if not lines or lines[0].split(" ", 1)[0].upper() in SKIPPED_BLOCKS:
             continue
 

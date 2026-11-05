@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 
 @dataclass
@@ -19,7 +19,7 @@ class Meeting:
     title: str
     source_name: str
     source_type: str = "txt"
-    turns: List[TranscriptTurn] = field(default_factory=list)
+    turns: list[TranscriptTurn] = field(default_factory=list)
 
 
 @dataclass
@@ -28,7 +28,7 @@ class TranscriptChunk:
 
     first_turn_idx: int
     last_turn_idx: int
-    speakers: List[str]  # unique, in order of first appearance
+    speakers: list[str]  # unique, in order of first appearance
     text: str  # one "Speaker: text" line per turn
     start: float
     end: Optional[float] = None

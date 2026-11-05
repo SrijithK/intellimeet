@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 from app.models import Meeting, TranscriptChunk, TranscriptTurn
 
 DEFAULT_WINDOW_SECONDS = 90.0
@@ -12,7 +10,7 @@ def chunk_meeting(
     meeting: Meeting,
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
     max_chars: int = DEFAULT_MAX_CHARS,
-) -> List[TranscriptChunk]:
+) -> list[TranscriptChunk]:
     """Group whole turns into time windows, overlapping by one turn.
 
     A chunk closes when adding the next turn would exceed ``window_seconds`` (measured
@@ -22,8 +20,8 @@ def chunk_meeting(
     Turn indices refer to positions in ``meeting.turns``.
     """
     indexed = [(i, turn) for i, turn in enumerate(meeting.turns) if turn.text.strip()]
-    chunks: List[TranscriptChunk] = []
-    window: List[tuple] = []
+    chunks: list[TranscriptChunk] = []
+    window: list[tuple] = []
 
     for idx, turn in indexed:
         if window and _would_overflow(window, turn, window_seconds, max_chars):
@@ -55,7 +53,7 @@ def _would_overflow(window, turn: TranscriptTurn, window_seconds: float, max_cha
 
 def _build_chunk(window) -> TranscriptChunk:
     turns = [turn for _, turn in window]
-    speakers: List[str] = []
+    speakers: list[str] = []
     for turn in turns:
         if turn.speaker not in speakers:
             speakers.append(turn.speaker)
