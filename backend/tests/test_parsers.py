@@ -47,3 +47,39 @@ def test_registry_picks_parser_by_extension_and_sets_source_type():
     assert meeting.source_type == "vtt"
     with pytest.raises(ValueError, match="Unsupported file type: md"):
         parse_transcript("notes.md", "# hi")
+
+
+ZOOM_VTT = "WEBVTT\n\n1\n00:00:01.000 --> 00:00:04.000\nAlice: Hello\n\n2\n00:00:05.000 --> 00:00:07.250 align:start\nBob: Hi there\n"
+
+
+def test_vtt_with_cue_identifiers_and_cue_settings():
+    turns = parse_vtt_transcript("zoom.vtt", ZOOM_VTT).turns
+
+    assert [(t.speaker, t.text, t.start, t.end) for t in turns] == [
+        ("Alice", "Hello", 1.0, 4.0),
+        ("Bob", "Hi there", 5.0, 7.25),
+    ]
+
+
+def test_vtt_with_windows_line_endings():
+    assert len(parse_vtt_transcript("zoom.vtt", ZOOM_VTT.replace("\n", "\r\n")).turns) == 2
+
+
+def test_vtt_voice_tags_and_multiline_payload():
+    vtt = "WEBVTT\n\nNOTE exported from Teams\n\n00:00:01.000 --> 00:00:03.000\n<v Alice Smith>Let's ship\n<i>on Friday</i>.</v>\n"
+
+    (turn,) = parse_vtt_transcript("teams.vtt", vtt).turns
+
+    assert (turn.speaker, turn.text) == ("Alice Smith", "Let's ship on Friday.")
+
+
+def test_vtt_short_timestamps_and_missing_speaker():
+    (turn,) = parse_vtt_transcript("x.vtt", "WEBVTT\n\n01:02.500 --> 01:04.000\nno speaker here\n").turns
+
+    assert (turn.speaker, turn.text, turn.start) == ("Unknown", "no speaker here", 62.5)
+
+
+def test_txt_continuation_lines_join_previous_turn():
+    meeting = parse_txt_transcript("a.txt", "intro junk\n[00:00:01] Alice: first part\nsecond part\n[00:00:09] Bob: ok\n")
+
+    assert [(t.speaker, t.text) for t in meeting.turns] == [("Alice", "first part second part"), ("Bob", "ok")]

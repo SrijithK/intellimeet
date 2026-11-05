@@ -1,53 +1,58 @@
 from __future__ import annotations
 
+import re
+from typing import List, Optional, Tuple
+
 from app.models import Meeting, TranscriptTurn
 
+# Hours are optional in WebVTT ("01:02.500" is valid).
+TIMESTAMP = r"(?:(\d+):)?(\d{2}):(\d{2})[.,](\d{3})"
+TIMING_RE = re.compile(rf"^{TIMESTAMP}\s*-->\s*{TIMESTAMP}")
+VOICE_RE = re.compile(r"<v(?:\.[^\s>]+)*\s+([^>]+)>")  # <v Alice> or <v.loud Alice>
+TAG_RE = re.compile(r"<[^>]+>")
+SPEAKER_PREFIX_RE = re.compile(r"^([^:]{1,60}):\s+(.*)$", re.DOTALL)
+SKIPPED_BLOCKS = ("WEBVTT", "NOTE", "STYLE", "REGION")
 
-def _parse_timestamp(value: str) -> int:
-    hours, minutes, seconds_and_ms = value.split(":")
-    seconds, milliseconds = seconds_and_ms.split(".")
-    return int(hours) * 3600 + int(minutes) * 60 + int(seconds) + (int(milliseconds) / 1000)
+
+def _seconds(hours: Optional[str], minutes: str, seconds: str, millis: str) -> float:
+    return int(hours or 0) * 3600 + int(minutes) * 60 + int(seconds) + int(millis) / 1000
+
+
+def _speaker_and_text(payload: str) -> Tuple[str, str]:
+    voice = VOICE_RE.search(payload)
+    if voice:
+        return voice.group(1).strip(), TAG_RE.sub("", payload).strip()
+    plain = TAG_RE.sub("", payload).strip()
+    prefixed = SPEAKER_PREFIX_RE.match(plain)
+    if prefixed:
+        return prefixed.group(1).strip(), prefixed.group(2).strip()
+    return "Unknown", plain
 
 
 def parse_vtt_transcript(file_name: str, content: str) -> Meeting:
     title = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
     meeting = Meeting(title=title, source_name=file_name)
 
-    blocks = [block.strip() for block in content.split("\n\n") if block.strip()]
-
-    for block in blocks:
-        lines = [line.strip() for line in block.splitlines() if line.strip()]
-        if not lines:
-            continue
-        if lines[0].upper() == "WEBVTT":
-            lines = lines[1:]
-        if not lines:
-            continue
-        if "-->" not in lines[0]:
+    normalized = content.replace("\r\n", "\n").replace("\r", "\n")
+    for block in re.split(r"\n\s*\n", normalized):
+        lines: List[str] = [line.strip() for line in block.split("\n") if line.strip()]
+        if not lines or lines[0].split(" ", 1)[0].upper() in SKIPPED_BLOCKS:
             continue
 
-        timeline = lines[0]
-        start_value, end_value = [item.strip() for item in timeline.split("-->", 1)]
-        start = _parse_timestamp(start_value)
-        end = _parse_timestamp(end_value)
+        # A cue may start with an identifier line (Zoom numbers every cue).
+        timing_index = next((i for i, line in enumerate(lines[:2]) if TIMING_RE.match(line)), None)
+        if timing_index is None:
+            continue
+        groups = TIMING_RE.match(lines[timing_index]).groups()
+        payload = " ".join(lines[timing_index + 1 :])
+        if not payload:
+            continue
 
-        message_lines = lines[1:]
-        message = "\n".join(message_lines)
-        speaker = "Unknown"
-        text = message
-
-        if ":" in message:
-            speaker, text = message.split(":", 1)
-            speaker = speaker.strip()
-            text = text.strip()
-
+        speaker, text = _speaker_and_text(payload)
+        if not text:
+            continue
         meeting.turns.append(
-            TranscriptTurn(
-                speaker=speaker,
-                text=text,
-                start=int(start),
-                end=int(end),
-            )
+            TranscriptTurn(speaker=speaker, text=text, start=_seconds(*groups[:4]), end=_seconds(*groups[4:]))
         )
 
     return meeting
