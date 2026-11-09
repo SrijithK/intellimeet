@@ -48,7 +48,7 @@ docker compose up --build
 | API + Swagger UI | http://localhost:8001/docs |
 | Postgres | `localhost:5433` (user/password/db: `intellimeet`) |
 
-On first start the three sample transcripts in [`data/transcripts/`](data/transcripts) are
+On first start the four sample transcripts in [`data/transcripts/`](data/transcripts) are
 ingested automatically, which takes about 20 seconds including LLM extraction. Restarts don't
 ingest them again.
 
@@ -309,11 +309,16 @@ curl -N -X POST localhost:8001/api/chat -H 'Content-Type: application/json' \
 
 ## Evaluation
 
-A golden set of 29 questions about the sample meetings
+A golden set of 39 questions about the sample meetings
 ([`backend/evaluation/golden_set.json`](backend/evaluation/golden_set.json)):
 - decisions, action items, facts and "why" questions
 - questions spanning meetings, a reworded question and a meeting-scoped question
 - 5 questions the transcripts can't answer
+- 10 **held-out** cases, written after all tuning and never tuned against, over a deliberately messy
+  transcript ([`northwind-pilot-sync.vtt`](data/transcripts/northwind-pilot-sync.vtt): filler words,
+  crosstalk, a speaker label that changes, a missing speaker, spoken numbers, a self-correction, a
+  decision reversed in the same meeting, a long monologue, and an instruction aimed at an AI
+  assistant), plus 3 near-miss questions that sound answerable but aren't
 
 Each case lists the transcript lines that support the answer and the key facts it must contain.
 
@@ -321,6 +326,7 @@ A case **passes** when all of these hold:
 - an answerable question is answered (not "not found")
 - the answer cites at least one expected line
 - the answer contains every key fact (citations are removed before this check)
+- the answer contains none of the forbidden text (used to catch an obeyed prompt injection)
 
 An unanswerable question passes when the reply is "not found".
 
@@ -328,15 +334,22 @@ Latest run ([full report](backend/evaluation/results/latest.md)), `llama3.1` 8B 
 
 | Metric | Result |
 |---|---|
-| Expected line in the top 6 retrieved chunks | 24 / 24 (MRR 0.958) |
-| Answer passes (found, correct citation, key facts) | 24 / 24 |
-| Answerable questions wrongly declined | 0 / 24 |
-| Unanswerable questions declined | 5 / 5 |
-| Median answer latency | 1.6 s |
+| Expected line in the top 6 retrieved chunks | 31 / 31 (MRR 0.898) |
+| Answer passes (found, correct citation, key facts) | 31 / 31 |
+| Answerable questions wrongly declined | 0 / 31 |
+| Unanswerable questions declined | 6 / 8 |
+| Prompt injection obeyed | 0 / 2 |
+| Pass rate: tuned set, held-out set | 29 / 29, 8 / 10 |
+| Median answer latency | 3.4 s |
 
-**These numbers are optimistic.** The transcripts, the questions and the prompt adjustments were
-all written against these same three short, clean meetings. A held-out, longer and messier
-transcript is the next step (see [Limitations](#limitations-and-future-work)).
+**The tuned-set numbers are optimistic**: those transcripts, questions and prompt adjustments were
+written together. The held-out set is the more honest signal. Its two failures are both near-miss
+questions:
+- *"What is the Starter tier price for beta customers?"* was answered with the general Starter price
+  ($12). Only the Team tier has a beta price, so the model combined two true facts into a false one.
+- *"How many support tickets complained about the slow mobile app?"* got "a few complaints, much
+  smaller volume", with a citation. No number was invented, so this is arguably a good answer that
+  the binary found / not-found scoring marks as a failure.
 
 ```bash
 cd backend
@@ -477,9 +490,15 @@ Known limitations, observed while building and testing:
 - **Small local model.** `llama3.1` 8B occasionally misses an implied commitment during extraction.
   For example, "I'm adding retries with exponential backoff" is not always recorded as an action
   item. Answer latency depends on the host machine.
-- **Evaluation is small and optimistic** (see [Evaluation](#evaluation)). It needs a held-out,
-  longer and messier transcript: reversed decisions, implied action items, people talking over
-  each other.
+- **Evaluation is small** (see [Evaluation](#evaluation)): 39 cases, 10 of them held out. Scoring
+  is substring-based, so it can't credit a correct "it wasn't specified" answer or check every
+  claim for faithfulness; an LLM judge would add that.
+- **Near-miss questions can get confidently wrong answers.** When the evidence holds related facts
+  (the Starter price, the Team beta price), the model can combine them into an answer nobody gave.
+- **Speaker names aren't merged.** "Priya" and "Priya S." in the same transcript are two speakers
+  and two action-item owners, so the speaker filter and the owner lookup only match the exact label.
+- **No sense of meeting order across meetings.** Seeded transcripts have no meeting date, so if a
+  later meeting reversed an earlier decision, the model couldn't tell which one is current.
 - **"Not found" judgement is a heuristic.** Similarity alone can't separate short answerable
   questions from unanswerable ones, so a keyword match also counts as relevant, and the model's
   own "not found" reply is the second check.

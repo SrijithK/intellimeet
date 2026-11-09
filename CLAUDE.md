@@ -20,7 +20,9 @@ changes to the stack or architecture.
   5.2 golden-set eval (`backend/evaluation/`; latest report in `evaluation/results/latest.md`).
   README drafted: setup, architecture diagrams, API, evaluation, limitations. Its "Design decisions and
   trade-offs" subsections are `_TODO_` placeholders for the user to write; don't fill them in.
-- Next: user testing, then a held-out messy transcript to find weaknesses; GitHub Actions CI. Not built yet: Anthropic LLM provider,
+  Held-out set: `data/transcripts/northwind-pilot-sync.vtt` + 10 `held_out` golden cases (never tune
+  against them); report shows tuned vs held-out pass rates.
+- Next: user testing; GitHub Actions CI. Not built yet: Anthropic LLM provider,
   JSON logs/request IDs, chat history for follow-up questions.
 - LLM: the user has no Anthropic API key, so the active provider is Ollama (`llama3.1`) on the host.
   Anthropic stays the intended provider behind `LLMProvider` once a key exists (see D3).

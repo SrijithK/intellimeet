@@ -41,6 +41,7 @@ from evaluation.scoring import (  # noqa: E402
     CaseResult,
     GoldenCase,
     first_relevant_rank,
+    forbidden_present,
     load_golden_set,
     missing_facts,
     summarize,
@@ -82,6 +83,7 @@ def run_case(case: GoldenCase, answerer: Answerer, session_factory, meeting_ids:
     result.cited = [(c["meeting_title"], c["turn_idx"]) for c in done["cited"]]
     result.cites_expected = any(turn in case.expected_turns for turn in result.cited)
     result.missing = missing_facts(result.answer, case.must_include) if case.answerable else []
+    result.forbidden = forbidden_present(result.answer, case.must_not_include)
     result.latency_ms = done["latency_ms"]
     result.prompt_tokens = done.get("prompt_tokens")
     result.output_tokens = done.get("output_tokens")
@@ -97,6 +99,7 @@ def write_reports(results: list[CaseResult], summary: dict, meta: dict) -> None:
             {
                 "id": r.case.id,
                 "category": r.case.category,
+                "held_out": r.case.held_out,
                 "question": r.case.question,
                 "passed": r.passed,
                 "failure": r.failure_reason,
@@ -122,14 +125,14 @@ def write_reports(results: list[CaseResult], summary: dict, meta: dict) -> None:
         "|---|---|",
         *[f"| {name} | {value} |" for name, value in summary.items()],
         "",
-        "| Case | Category | Retrieval rank | Result | Notes |",
-        "|---|---|---|---|---|",
+        "| Case | Category | Held out | Retrieval rank | Result | Notes |",
+        "|---|---|---|---|---|---|",
     ]
     for r in results:
         rank = "n/a" if not r.case.answerable else (r.retrieval_rank or "miss")
-        lines.append(
-            f"| {r.case.id} | {r.case.category} | {rank} | {'pass' if r.passed else 'FAIL'} | {r.failure_reason} |"
-        )
+        held_out = "yes" if r.case.held_out else ""
+        result = "pass" if r.passed else "FAIL"
+        lines.append(f"| {r.case.id} | {r.case.category} | {held_out} | {rank} | {result} | {r.failure_reason} |")
     failures = [r for r in results if not r.passed]
     if failures:
         lines += ["", "## Failures", ""]
