@@ -435,49 +435,47 @@ frontend/
 
 ## Design decisions and trade-offs
 
-<!--
-  To be written by the author, in their own words. Raw notes with the options considered are in
-  docs/decisions.md. Suggested prompts are kept below as comments.
--->
 
 ### Problem framing and scope
 
-<!-- Why Option 3; what a user of this needs; what was deliberately left out. -->
+This Option 3 seemed interesting because to build any app/feature/capability we need to put the user experience into consideration.
 
-_TODO_
+The user will be able to upload meeting transcripts in txt and vtt versions into the app and search through specific meetings or all meetings using the frontend.
+
+Other transcript formats like json can be enabled in the next version of the app.
+
+I have kept this a simpler local application at a POC level. Certain changes can be done while we take it to production.
 
 ### Stack
 
 <!-- FastAPI + React; Postgres + pgvector instead of a separate vector DB; no LangChain/LlamaIndex. -->
+The tech stack with FastAPI + React was chosen for its light weight and quick dev turnaround time.
+Also it's quite performant.
 
-_TODO_
+I chose to keep the Retrieval & Generation as AI Models responsibility as it is a simple app.
+
 
 ### Retrieval and grounding
 
-<!-- Turn-window chunking; hybrid search + RRF; structured extraction at ingestion; turn-level
-     citations via reference numbers; the two-layer "not found" design. -->
+Hybrid Search with meeting details are done with PG Vector.
 
-_TODO_
 
 ### LLM choice: local Ollama instead of the Anthropic API
 
-<!-- The original plan (D3) and why it changed; what that costs in quality and speed; how the
-     LLMProvider interface keeps the switch to Claude / Bedrock a configuration change. -->
+For the Local Version, I chose Llama with Ollama and also Anthropic API requires a subscription.
+For Production grade apps, we can go with Anthropic API.
 
-_TODO_
 
 ### Path to production on AWS
 
-<!-- From D10: SQS, S3, Bedrock, Aurora + pgvector, ECS Fargate, Cognito, and so on; what's
-     already behind interfaces. -->
+The app is built with cloud deployment in mind. We can use services like s3, Aurora RDS, PG Vector, ECS Fargate to deploy our stacks.
 
-_TODO_
 
 ### How AI tools were used
 
-<!-- How the work was split with the AI assistant; what was reviewed, changed or rejected. -->
+Agile AI development using BMAD Method & Claude was done.
+The code changes were reviewed for the standards and edge cases.
 
-_TODO_
 
 ## Limitations and future work
 
