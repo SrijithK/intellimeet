@@ -379,8 +379,8 @@ Checks:
 | Frontend tests | `cd frontend && npm test` |
 | Frontend typecheck, lint, build | `npm run typecheck && npm run lint && npm run build` |
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and on every
-pull request:
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs when a pull request is merged into
+`main`, and can be started manually from the Actions tab ("Run workflow"):
 - **backend** (Python 3.12, Postgres + pgvector service): ruff lint and format, migrations plus
   `alembic check`, and pytest. pytest includes the API contract check and the golden-set retrieval
   check. Live-LLM tests are skipped because CI has no Ollama.

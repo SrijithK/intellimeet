@@ -1,13 +1,15 @@
 name: CI
 
 on:
+  # Runs when a PR is merged into main (a merge is a push to main). Direct pushes to main also
+  # trigger it. PRs are not checked before merging; use "Run workflow" to check a branch on demand.
   push:
     branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false # every merge to main gets its own result
 
 permissions:
   contents: read
