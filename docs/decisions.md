@@ -23,6 +23,17 @@ decisions and action items.
 - **Models:** Sonnet 5.5 for answering; Haiku 4.5 for cheaper ingestion-time extraction.
 - **Why:** One env var to run locally. Bedrock gives the same models with IAM auth and data staying
   in AWS, so the provider sits behind an interface.
+- **Revised (2026-11-05): local LLM via Ollama.** There was no Anthropic API key available (API access is
+  billed separately from a Claude subscription), so the active provider is Ollama on the host
+  running `llama3.1` (8B) for both extraction and answers. No key is needed, and no data leaves the
+  machine.
+  - **Kept:** the `LLMProvider` interface. Anthropic (and Bedrock in production) remain the intended
+    providers and are a configuration change once a key exists.
+  - **Cost:** a smaller model, so the prompts had to be adapted. Ollama's context size is set
+    explicitly, because it silently truncates otherwise. Prompts contain no example facts, because
+    the model copies them. Citations use numeric references that the server rewrites. Latency
+    depends on the host's GPU.
+  - **Evidence:** golden-set results with `llama3.1` are in `backend/evaluation/results/latest.md`.
 
 ## D4. Retrieval store: Postgres + pgvector
 
