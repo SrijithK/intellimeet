@@ -1,5 +1,7 @@
 # IntelliMeet
 
+[![CI](https://github.com/SrijithK/intellimeet/actions/workflows/ci.yml/badge.svg)](https://github.com/SrijithK/intellimeet/actions/workflows/ci.yml)
+
 Meeting intelligence assistant. Upload meeting transcripts, then ask questions about what was
 discussed, decided and assigned. Every answer comes only from the transcripts and cites its
 sources as `[meeting, hh:mm:ss, speaker]`. Each citation links to the exact transcript line.
@@ -376,6 +378,15 @@ Checks:
 | Migrations match models | `.venv/bin/alembic check` |
 | Frontend tests | `cd frontend && npm test` |
 | Frontend typecheck, lint, build | `npm run typecheck && npm run lint && npm run build` |
+
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and on every
+pull request:
+- **backend** (Python 3.12, Postgres + pgvector service): ruff lint and format, migrations plus
+  `alembic check`, and pytest. pytest includes the API contract check and the golden-set retrieval
+  check. Live-LLM tests are skipped because CI has no Ollama.
+- **frontend:** a check that the generated API types match `docs/openapi.json`, then lint,
+  typecheck, Vitest and the build.
+- **docker:** builds both images.
 
 After changing the API:
 1. Regenerate the contract: `cd backend && .venv/bin/python -m scripts.export_openapi`
