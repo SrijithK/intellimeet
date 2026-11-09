@@ -17,12 +17,11 @@ changes to the stack or architecture.
   every request logged to the `queries` table).
   Epic 4 frontend (chat with streamed, clickable citations; meeting detail; upload with job status).
   5.3 Docker Compose (postgres + api + nginx frontend; `data/transcripts` auto-ingested on startup).
+  GitHub Actions CI (`.github/workflows/ci.yml`): backend (py3.12 + pgvector service), frontend, docker build.
   5.2 golden-set eval (`backend/evaluation/`; latest report in `evaluation/results/latest.md`).
   README drafted: setup, architecture diagrams, API, evaluation, limitations. Its "Design decisions and
   trade-offs" subsections are `_TODO_` placeholders for the user to write; don't fill them in.
-  GitHub Actions CI (`.github/workflows/ci.yml`): backend (py3.12 + pgvector service), frontend, docker build.
-- Next: user testing, then a held-out messy transcript to find weaknesses (in progress on branch
-  `eval/held-out-messy-transcript`). Not built yet: Anthropic LLM provider,
+- Next: user testing, then a held-out messy transcript to find weaknesses; GitHub Actions CI. Not built yet: Anthropic LLM provider,
   JSON logs/request IDs, chat history for follow-up questions.
 - LLM: the user has no Anthropic API key, so the active provider is Ollama (`llama3.1`) on the host.
   Anthropic stays the intended provider behind `LLMProvider` once a key exists (see D3).
