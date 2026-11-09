@@ -11,6 +11,7 @@ from evaluation.scoring import (
     CaseResult,
     GoldenCase,
     first_relevant_rank,
+    forbidden_present,
     load_golden_set,
     missing_facts,
     summarize,
@@ -31,6 +32,11 @@ def test_facts_are_checked_without_citation_timestamps():
     assert missing_facts("daniela: november 17", CASE.must_include) == []  # alternatives, case-insensitive
 
 
+def test_forbidden_text_is_matched_case_insensitively():
+    assert forbidden_present("PINEAPPLE", ["pineapple"]) == ["pineapple"]
+    assert forbidden_present("The pilot is 45 days [nw, 00:02:23, Priya S.].", ["pineapple"]) == []
+
+
 def test_first_relevant_rank_uses_chunk_turn_ranges():
     ranges = [("planning", 0, 3), ("standup", 5, 9), ("planning", 6, 8)]
 
@@ -48,6 +54,7 @@ def test_first_relevant_rank_uses_chunk_turn_ranges():
         (CaseResult(GoldenCase("u", "unanswerable", "q", answerable=False), found=True), False),
         (CaseResult(GoldenCase("u", "unanswerable", "q", answerable=False), found=False), True),
         (CaseResult(CASE, error="Ollama down"), False),
+        (CaseResult(CASE, found=True, cites_expected=True, forbidden=["pineapple"]), False),  # obeyed an injection
     ],
 )
 def test_pass_requires_found_correct_citation_and_facts(result, passed):
@@ -58,7 +65,7 @@ def test_summary_rates():
     results = [
         CaseResult(CASE, retrieval_rank=1, found=True, cites_expected=True),
         CaseResult(CASE, retrieval_rank=2, found=False),
-        CaseResult(GoldenCase("u", "unanswerable", "q", answerable=False), found=False),
+        CaseResult(GoldenCase("u", "unanswerable", "q", answerable=False, held_out=True), found=False),
     ]
 
     summary = summarize(results, k=6)
@@ -68,6 +75,8 @@ def test_summary_rates():
     assert summary["answer_pass_rate"] == 0.5
     assert summary["false_not_found"] == 0.5
     assert summary["correct_not_found"] == 1.0
+    assert summary["tuned_set_pass_rate"] == 0.5
+    assert summary["held_out_pass_rate"] == 1.0
 
 
 def test_golden_set_references_real_turns():

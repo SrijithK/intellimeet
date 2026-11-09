@@ -24,6 +24,8 @@ class GoldenCase:
     meeting: Optional[str] = None  # scope the question to this meeting title
     expected_turns: list[TurnKey] = field(default_factory=list)
     must_include: list[Requirement] = field(default_factory=list)
+    must_not_include: list[str] = field(default_factory=list)
+    held_out: bool = False  # written after tuning; never tune against these
 
 
 def load_golden_set(path: Path = GOLDEN_SET_PATH) -> list[GoldenCase]:
@@ -37,6 +39,8 @@ def load_golden_set(path: Path = GOLDEN_SET_PATH) -> list[GoldenCase]:
             meeting=case.get("meeting"),
             expected_turns=[(title, idx) for title, idx in case.get("expected_turns", [])],
             must_include=case.get("must_include", []),
+            must_not_include=case.get("must_not_include", []),
+            held_out=case.get("held_out", False),
         )
         for case in raw["cases"]
     ]
@@ -68,6 +72,12 @@ def missing_facts(answer: str, requirements: list[Requirement]) -> list[str]:
     return missing
 
 
+def forbidden_present(answer: str, forbidden: list[str]) -> list[str]:
+    """Forbidden strings that appear in the answer (case-insensitive), e.g. obeyed injected text."""
+    text = answer.lower()
+    return [item for item in forbidden if item.lower() in text]
+
+
 @dataclass
 class CaseResult:
     case: GoldenCase
@@ -77,6 +87,7 @@ class CaseResult:
     cited: list[TurnKey] = field(default_factory=list)
     cites_expected: Optional[bool] = None
     missing: list[str] = field(default_factory=list)
+    forbidden: list[str] = field(default_factory=list)
     latency_ms: Optional[int] = None
     prompt_tokens: Optional[int] = None
     output_tokens: Optional[int] = None
@@ -88,7 +99,7 @@ class CaseResult:
 
     @property
     def passed(self) -> bool:
-        if self.error:
+        if self.error or self.forbidden:
             return False
         if not self.case.answerable:
             return self.found is False
@@ -98,9 +109,11 @@ class CaseResult:
     def failure_reason(self) -> str:
         if self.error:
             return f"error: {self.error}"
+        reasons = [f"contains forbidden: {', '.join(self.forbidden)}"] if self.forbidden else []
         if not self.case.answerable:
-            return "" if self.found is False else "answered an unanswerable question"
-        reasons = []
+            if self.found is not False:
+                reasons.append("answered an unanswerable question")
+            return "; ".join(reasons)
         if not self.found:
             reasons.append("said not found")
         elif not self.cites_expected:
@@ -131,5 +144,7 @@ def summarize(results: list[CaseResult], k: int) -> dict[str, Any]:
         "false_not_found": rate([r.found is False for r in answerable]),
         "correct_not_found": rate([r.passed for r in unanswerable]),
         "overall_pass_rate": rate([r.passed for r in results]),
+        "tuned_set_pass_rate": rate([r.passed for r in results if not r.case.held_out]),
+        "held_out_pass_rate": rate([r.passed for r in results if r.case.held_out]),
         "median_latency_ms": sorted(latencies)[len(latencies) // 2] if latencies else None,
     }
