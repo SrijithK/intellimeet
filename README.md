@@ -13,6 +13,7 @@ Take-home assignment, Option 3: Meeting Intelligence System.
 ## Contents
 
 - [Quick start](#quick-start)
+- [Ollama setup](#ollama-setup)
 - [Using it](#using-it)
 - [Architecture](#architecture)
 - [API](#api)
@@ -28,14 +29,12 @@ Take-home assignment, Option 3: Meeting Intelligence System.
 **Prerequisites**
 
 - Docker (Docker Desktop on macOS/Windows)
-- [Ollama](https://ollama.com) running on the host, with the model pulled:
+- Ollama running on the host with `llama3.1` pulled. See [Ollama setup](#ollama-setup); in short:
 
   ```bash
   ollama pull llama3.1
+  curl http://localhost:11434/api/version   # should return {"version": "..."}
   ```
-
-  Ollama runs on the host rather than in a container so that it can use the GPU (Metal on Apple
-  Silicon). The API container reaches it at `host.docker.internal:11434`.
 
 **Run**
 
@@ -55,6 +54,93 @@ ingest them again.
 
 Ports can be changed with `FRONTEND_PORT` and `API_PORT`, and the model with `OLLAMA_MODEL`, e.g.
 `FRONTEND_PORT=3000 docker compose up`.
+
+## Ollama setup
+
+The LLM runs locally in [Ollama](https://ollama.com): no API key, and no data leaves the machine.
+It runs on the host, not in a container: Docker on macOS can't use the Apple GPU, so a containerised
+model would run on the CPU only and answer several times slower. The `api` container reaches the host's
+Ollama at `host.docker.internal:11434`.
+
+```
+┌──────────────── Docker ────────────────┐
+│  frontend (nginx) ──▶ api (FastAPI) ───┼──▶ host.docker.internal:11434
+│                        │               │            │
+│                     postgres           │            ▼
+└────────────────────────────────────────┘    Ollama on the host (llama3.1)
+```
+
+**1. Install**
+
+| OS | Install |
+|---|---|
+| macOS | Download the app from [ollama.com/download](https://ollama.com/download), or `brew install ollama` |
+| Linux | `curl -fsSL https://ollama.com/install.sh \| sh` (installs a systemd service) |
+| Windows | Installer from [ollama.com/download](https://ollama.com/download) |
+
+**2. Start it.** The macOS and Windows apps start the server automatically (look for the menu-bar or
+tray icon). Otherwise, run `ollama serve` in a terminal. It listens on port `11434`.
+
+**3. Pull the model** (about 4.9 GB to download):
+
+```bash
+ollama pull llama3.1
+```
+
+**4. Check it works**
+
+```bash
+ollama list                                  # llama3.1:latest should be listed
+curl http://localhost:11434/api/version      # {"version": "..."}
+ollama run llama3.1 "Reply with one word: ready"
+```
+
+Once the app is running and you've asked a question, `ollama ps` shows the model loaded. The
+`CONTEXT` column reads `8192`, the context size the app requests, and `PROCESSOR` shows whether it
+runs on the GPU.
+
+**Hardware.** `llama3.1` (8B, 4-bit) uses about 6 GB of memory with the 8k context. 16 GB of RAM
+is comfortable. On Apple Silicon it runs on the GPU and answers start in about 2 seconds. On a
+CPU-only machine, expect answers to take tens of seconds.
+
+**Linux with Docker.** Ollama listens only on `127.0.0.1` by default, which containers can't reach.
+Make it listen on all interfaces, then restart it:
+
+```bash
+sudo systemctl edit ollama.service      # add the two lines below, save
+#   [Service]
+#   Environment="OLLAMA_HOST=0.0.0.0"
+sudo systemctl restart ollama
+```
+
+Compose already maps `host.docker.internal` to the host on Linux (`extra_hosts: host-gateway`).
+Docker Desktop on macOS and Windows needs none of this.
+
+**Using a different model.** Any Ollama chat model works, because Ollama itself makes the model's
+extraction output match the JSON schema. Answer and extraction quality vary by model. Pull the
+model and set `OLLAMA_MODEL`:
+
+```bash
+ollama pull qwen2.5:7b
+OLLAMA_MODEL=qwen2.5:7b docker compose up -d api
+```
+
+The golden-set numbers in this README were measured with `llama3.1`. Re-run the
+[evaluation](#evaluation) after switching models.
+
+**Troubleshooting**
+
+| Symptom | Cause and fix |
+|---|---|
+| Uploads show "Searchable, but extraction failed". Chat shows "Could not reach Ollama". | Ollama isn't running, or (on Linux) isn't reachable from Docker. Start it and check with `curl http://localhost:11434/api/version`. To reach it from inside the container: `docker compose exec api python -c "import urllib.request; print(urllib.request.urlopen('http://host.docker.internal:11434/api/version').read())"` |
+| `Ollama returned 404: {"error":"model 'llama3.1' not found"}` | The model isn't pulled: `ollama pull llama3.1` (or whatever `OLLAMA_MODEL` names). |
+| The first answer after a while is slow | Ollama unloads idle models after about 5 minutes, and reloading takes a few seconds. Later answers are fast. |
+| Answers are very slow | The model is running on the CPU. Check the `PROCESSOR` column in `ollama ps`. |
+
+Meetings ingested while Ollama was down stay searchable, but have no extracted decisions or action
+items. There's no retry button yet (see [Limitations](#limitations-and-future-work)). The only
+way to re-extract is a fresh database: `docker compose down -v && docker compose up`. This also
+removes uploaded meetings; the sample transcripts are ingested again on startup.
 
 ## Using it
 
